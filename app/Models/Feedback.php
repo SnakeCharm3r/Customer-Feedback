@@ -1,0 +1,275 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Feedback extends Model
+{
+    use HasFactory;
+
+    protected $table = 'feedback_submissions';
+
+    protected $fillable = [
+        'reference_no',
+        'patient_name',
+        'email',
+        'phone',
+        'service_units',
+        'service_category',
+        'feedback_type',
+        'service_rating',
+        'confidentiality_respected',
+        'confidentiality_comment',
+        'visit_date',
+        'overall_experience',
+        'improvement_suggestion',
+        'message',
+        'is_urgent',
+        'attachment_path',
+        'consent_given',
+        'source',
+        'status',
+        'assigned_to',
+        'created_by',
+        'reviewed_by',
+        'reviewed_at',
+        'resolved_at',
+    ];
+
+    protected $casts = [
+        'visit_date' => 'date',
+        'service_units' => 'array',
+        'confidentiality_respected' => 'boolean',
+        'is_urgent' => 'boolean',
+        'consent_given' => 'boolean',
+        'reviewed_at' => 'datetime',
+        'resolved_at' => 'datetime',
+    ];
+
+    const SERVICE_UNITS = [
+        'eye' => 'Eye',
+        'orthopaedic' => 'Orthopaedic',
+        'physiotherapy' => 'Physiotherapy',
+        'physician' => 'Physician',
+        'gynaecology' => 'Gynaecology',
+        'ent' => 'ENT',
+        'prosthetics_orthotics' => 'Prosthetics & Orthotics',
+        'pharmacy' => 'Pharmacy',
+        'radiology' => 'Radiology',
+        'laboratory' => 'Laboratory',
+        'other' => 'Other',
+    ];
+
+    const SERVICE_CATEGORIES = [
+        'outpatient' => 'Outpatient',
+        'inpatient' => 'Inpatient',
+        'eye_surgery' => 'Eye Surgery',
+        'rehabilitation' => 'Rehabilitation',
+        'pharmacy' => 'Pharmacy',
+        'reception_admin' => 'Reception / Admin',
+        'billing' => 'Billing',
+        'other' => 'Other',
+    ];
+
+    const FEEDBACK_TYPES = [
+        'compliment' => 'Compliment',
+        'complaint' => 'Complaint',
+        'suggestion' => 'Suggestion',
+        'enquiry' => 'Enquiry',
+    ];
+
+    const SERVICE_RATINGS = [
+        'poor' => 'Poor',
+        'average' => 'Average',
+        'good' => 'Good',
+        'excellent' => 'Excellent',
+    ];
+
+    const SOURCES = [
+        'portal' => 'Portal',
+        'manual' => 'Manual / Paper Form',
+        'other' => 'Other',
+    ];
+
+    const STATUSES = [
+        'new' => 'New',
+        'under_review' => 'Under Review',
+        'responded' => 'Responded',
+        'closed' => 'Closed',
+    ];
+
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function internalNotes(): HasMany
+    {
+        return $this->hasMany(InternalNote::class, 'feedback_id');
+    }
+
+    public function patientResponses(): HasMany
+    {
+        return $this->hasMany(PatientResponse::class, 'feedback_id');
+    }
+
+    public function getPublicResponse(): ?PatientResponse
+    {
+        return $this->patientResponses()
+            ->where('is_public', true)
+            ->latest()
+            ->first();
+    }
+
+    public function getLatestResponseAttribute(): ?PatientResponse
+    {
+        return $this->patientResponses
+            ->sortByDesc('created_at')
+            ->first();
+    }
+
+    public function getReportExcerptAttribute(): string
+    {
+        return (string) ($this->overall_experience ?: $this->message ?: '');
+    }
+
+    public function getSourceLabel(): string
+    {
+        return self::SOURCES[$this->source] ?? ucfirst((string) $this->source);
+    }
+
+    public function getSubmitterRoleLabel(): string
+    {
+        if ($this->source === 'portal' || !$this->createdBy) {
+            return 'Customer';
+        }
+
+        return $this->createdBy->getRoleLabel();
+    }
+
+    public static function generateReferenceNo(): string
+    {
+        $year = date('Y');
+        $prefix = "CCBRT-{$year}-";
+        
+        // Get the last feedback for this year
+        $lastFeedback = self::where('reference_no', 'like', $prefix . '%')
+            ->orderBy('id', 'desc')
+            ->first();
+        
+        if ($lastFeedback) {
+            $lastNumber = (int) substr($lastFeedback->reference_no, -5);
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+        
+        return $prefix . str_pad($newNumber, 5, '0', STR_PAD_LEFT);
+    }
+
+    public function getStatusBadgeClass(): string
+    {
+        return match($this->status) {
+            'new'          => 'bg-danger',
+            'under_review' => 'bg-warning text-dark',
+            'responded'    => 'bg-success',
+            'closed'       => 'bg-secondary',
+            default        => 'bg-secondary',
+        };
+    }
+
+    public function getStatusBadge(): string
+    {
+        $class = $this->getStatusBadgeClass();
+        $label = $this->getStatusLabel();
+        return "<span class=\"badge {$class}\">{$label}</span>";
+    }
+
+    /**
+     * Accessors — bridge view field names to actual DB columns
+     */
+    public function getReferenceNumberAttribute(): string
+    {
+        return $this->reference_no ?? '';
+    }
+
+    public function getPatientEmailAttribute(): ?string
+    {
+        return $this->email;
+    }
+
+    public function getPatientPhoneAttribute(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function getIsPriorityAttribute(): bool
+    {
+        return (bool) $this->is_urgent;
+    }
+
+    public function getAttachmentAttribute(): ?string
+    {
+        return $this->attachment_path;
+    }
+
+    public function getServiceUnitsLabelsAttribute(): array
+    {
+        return collect($this->service_units ?? [])
+            ->map(fn ($unit) => __('portal.options.service_units.' . $unit, [], app()->getLocale()))
+            ->values()
+            ->all();
+    }
+
+    public function getServiceUnitsSummaryAttribute(): ?string
+    {
+        $labels = $this->service_units_labels;
+
+        return empty($labels) ? null : implode(', ', $labels);
+    }
+
+    public function getServiceCategoryLabel(): string
+    {
+        return __('portal.options.service_categories.' . $this->service_category, [], app()->getLocale());
+    }
+
+    public function getServiceRatingLabel(): string
+    {
+        return __('portal.options.service_ratings.' . $this->service_rating, [], app()->getLocale());
+    }
+
+    public function getFeedbackTypeLabel(): string
+    {
+        return __('portal.options.feedback_types.' . $this->feedback_type, [], app()->getLocale());
+    }
+
+    public function getConfidentialityLabel(): ?string
+    {
+        if (is_null($this->confidentiality_respected)) {
+            return null;
+        }
+
+        return $this->confidentiality_respected
+            ? __('portal.common.yes')
+            : __('portal.common.no');
+    }
+
+    public function getStatusLabel(): string
+    {
+        return __('portal.options.statuses.' . $this->status, [], app()->getLocale());
+    }
+}

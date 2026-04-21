@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-labelledby="ccbrtTitle ccbrtDesc">
+  <title id="ccbrtTitle">CCBRT Logo</title>
+  <desc id="ccbrtDesc">Circular CCBRT logo with surrounding text and a green banner across the center.</desc>
+  <defs>
+    <path id="ccbrt-top-arc" d="M 60 160 A 100 100 0 0 1 260 160" />
+    <path id="ccbrt-bottom-arc" d="M 260 160 A 100 100 0 0 1 60 160" />
+  </defs>
+  <circle cx="160" cy="160" r="138" fill="#111111" />
+  <circle cx="160" cy="160" r="106" fill="#b7d63d" />
+  <circle cx="160" cy="160" r="124" fill="none" stroke="#111111" stroke-width="16" />
+  <rect x="24" y="126" width="272" height="68" rx="4" fill="#1f7f3e" />
+  <text fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" letter-spacing="1.2">
+    <textPath href="#ccbrt-top-arc" startOffset="50%" text-anchor="middle">COMPREHENSIVE COMMUNITY BASED</textPath>
+  </text>
+  <text fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="1.3">
+    <textPath href="#ccbrt-bottom-arc" startOffset="50%" text-anchor="middle">REHABILITATION IN TANZANIA</textPath>
+  </text>
+  <text x="160" y="174" fill="#ffffff" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="72" font-weight="900" text-anchor="middle">CCBRT</text>
+</svg>
