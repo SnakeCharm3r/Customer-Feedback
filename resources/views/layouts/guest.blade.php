@@ -118,6 +118,26 @@
                 font-size: 1.8rem;
             }
         }
+
+        @media (min-width: 1600px) {
+            html { font-size: 17px; }
+            .auth-card { max-width: 560px; }
+            .auth-card-wide { max-width: 780px; }
+            .auth-brand-logo { width: 88px; height: 88px; }
+            .auth-header .logo-text { font-size: 2.4rem; }
+            .auth-header .logo-sub { font-size: 0.9rem; letter-spacing: 3px; }
+            .auth-header { padding: 2.5rem; }
+            .auth-body { padding: 2.5rem; }
+            .form-control, .form-select { font-size: 1rem; padding: 0.75rem 1rem; }
+            .btn-auth { font-size: 1rem; padding: 0.8rem 1.75rem; }
+            .section-divider { font-size: 0.8rem; }
+        }
+
+        @media (min-width: 1920px) {
+            html { font-size: 18.5px; }
+            .auth-card { max-width: 620px; }
+            .auth-card-wide { max-width: 860px; }
+        }
     </style>
 </head>
 <body>

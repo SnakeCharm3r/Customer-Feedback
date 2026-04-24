@@ -525,6 +525,69 @@
             margin-bottom: 0.3rem;
             font-weight: 700;
         }
+
+        /* ── TV / Large-screen optimisation (≥ 1600 px) ──────────────────────
+           Scales up the public portal for comfortable viewing on 65"+ displays
+           at ~2 m viewing distance.
+        ─────────────────────────────────────────────────────────────────────── */
+        @media (min-width: 1600px) {
+            html { font-size: 17px; }
+
+            /* Wider container */
+            .container { max-width: 1340px !important; }
+
+            /* Navbar */
+            .navbar-ccbrt { padding: 1.25rem 0; }
+            .public-brand-logo { width: 68px; height: 68px; }
+            .public-brand-name { font-size: 1.6rem; }
+            .public-brand-subtitle { font-size: 0.82rem; }
+            .navbar-ccbrt .nav-link { font-size: 1rem; padding: 0.6rem 1.1rem; }
+
+            /* Hero */
+            .hero-title { font-size: 3.2rem; }
+            .hero-subtitle { font-size: 1.45rem; }
+            .hero-section { padding: 5.5rem 0; }
+
+            /* Cards */
+            .card-ccbrt .card-header { padding: 1.75rem; font-size: 1.15rem; }
+            .card-ccbrt .card-body { padding: 2.5rem; }
+
+            /* Buttons */
+            .btn-ccbrt-primary,
+            .btn-ccbrt-outline { padding: 0.9rem 2.4rem; font-size: 1.05rem; }
+            .btn { font-size: 0.95rem; }
+            .btn-lg { font-size: 1.1rem !important; padding: 0.85rem 2rem !important; }
+
+            /* Forms */
+            .form-control-ccbrt { padding: 0.85rem 1.15rem; font-size: 1rem; }
+            .form-label { font-size: 0.95rem; }
+            .form-control, .form-select { font-size: 0.95rem; }
+
+            /* Info box */
+            .info-box { padding: 1.75rem; font-size: 0.95rem; }
+
+            /* Process steps */
+            .step-number { width: 72px; height: 72px; font-size: 1.75rem; }
+            .step-title { font-size: 1.05rem; }
+            .step-description { font-size: 1rem; }
+
+            /* Reference box */
+            .reference-number { font-size: 2.5rem; }
+
+            /* Status timeline */
+            .status-dot { width: 52px; height: 52px; font-size: 1.2rem; }
+            .status-label { font-size: 0.95rem; }
+
+            /* Footer */
+            footer { padding: 3.5rem 0 2.5rem; font-size: 0.95rem; }
+            .footer-brand .public-brand-logo { width: 80px; height: 80px; }
+        }
+
+        @media (min-width: 1920px) {
+            html { font-size: 18.5px; }
+            .container { max-width: 1560px !important; }
+            .hero-title { font-size: 3.8rem; }
+        }
     </style>
     
     @stack('styles')

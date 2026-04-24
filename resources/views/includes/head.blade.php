@@ -271,6 +271,91 @@
             background-color: var(--ccbrt-brand-500) !important;
             color: var(--ccbrt-brand-text) !important;
         }
+
+        /* ── TV / Large-screen optimisation (≥ 1600 px) ───────────────────────
+           Targets 65"+ displays viewed from ~2 m. Scales up base sizes by ~20-30%
+           without breaking the existing Bootstrap grid.
+        ─────────────────────────────────────────────────────────────────────── */
+        @media (min-width: 1600px) {
+            /* Root scale-up */
+            html { font-size: 17px; }
+
+            /* Body / global text */
+            body { font-size: 1rem; }
+
+            /* Topbar */
+            #page-topbar { min-height: 72px; }
+            #page-topbar .navbar-header { height: 72px; }
+            #page-topbar .btn-topbar,
+            #page-topbar .topbar-user > .btn,
+            #page-topbar .vertical-menu-btn { font-size: 1.1rem; }
+
+            /* Sidebar */
+            .app-menu.navbar-menu { width: 280px !important; }
+            .navbar-nav .nav-link { font-size: 0.95rem !important; padding: 0.65rem 1.1rem !important; }
+            .navbar-nav .menu-title span { font-size: 0.72rem !important; }
+            .navbar-nav .nav-link i { font-size: 1.1rem !important; }
+            .main-content { margin-left: 280px !important; }
+
+            /* Admin brand */
+            .admin-brand-title { font-size: 1.15rem; }
+            .admin-brand-logo-lg { width: 62px; height: 62px; }
+
+            /* Page content padding */
+            .page-content { padding: 1.75rem 1.75rem 80px 1.75rem; }
+
+            /* Page title */
+            .page-title-box h4 { font-size: 1.35rem; }
+            .breadcrumb-item, .breadcrumb-item a { font-size: 0.85rem; }
+
+            /* Cards */
+            .card { border-radius: 0.6rem; }
+            .card-header { padding: 0.9rem 1.25rem; font-size: 1rem; }
+            .card-body { padding: 1.25rem; }
+            .card-title { font-size: 1.05rem; }
+
+            /* Tables */
+            .table { font-size: 0.95rem !important; }
+            .table th, .table td { padding: 0.75rem 0.85rem !important; }
+            .table thead th { font-size: 0.8rem !important; }
+
+            /* Badges */
+            .badge { font-size: 0.78rem !important; padding: 0.38em 0.7em !important; }
+
+            /* Buttons */
+            .btn-sm { font-size: 0.82rem !important; padding: 0.38rem 0.8rem !important; }
+            .btn { font-size: 0.92rem; }
+
+            /* Form controls */
+            .form-control, .form-select { font-size: 0.95rem; padding: 0.55rem 0.85rem; }
+            .form-control-sm, .form-select-sm { font-size: 0.85rem !important; padding: 0.4rem 0.7rem !important; }
+            .form-label { font-size: 0.88rem; }
+            .input-group-text { font-size: 0.9rem; }
+
+            /* Pagination */
+            .page-link { font-size: 0.9rem; padding: 0.5rem 0.85rem; }
+
+            /* Alert / Toast */
+            .alert { font-size: 0.93rem; }
+
+            /* Stats / summary numbers */
+            .fw-bold.fs-5, .fw-bold.fs-4 { font-size: 1.25rem !important; }
+            .text-muted.small, small, .small { font-size: 0.82rem !important; }
+
+            /* Containers */
+            .container-fluid { max-width: 1800px; }
+
+            /* Modals */
+            .modal-dialog { font-size: 0.95rem; }
+            .modal-header .modal-title { font-size: 1.1rem; }
+        }
+
+        @media (min-width: 1920px) {
+            html { font-size: 18.5px; }
+            .app-menu.navbar-menu { width: 300px !important; }
+            .main-content { margin-left: 300px !important; }
+            .container-fluid { max-width: 2100px; }
+        }
     </style>
 
     <!-- jsvectormap css -->
