@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EscalationController;
 use App\Http\Controllers\FeedbackAdminController;
 use App\Http\Controllers\FeedbackController;
@@ -62,6 +63,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/admin/feedback/{feedback}/assignment', [FeedbackAdminController::class, 'updateAssignment'])->name('feedback.admin.assignment');
     Route::post('/admin/feedback/{feedback}/notes', [FeedbackAdminController::class, 'storeNote'])->name('feedback.admin.note');
     Route::post('/admin/feedback/{feedback}/responses', [FeedbackAdminController::class, 'storeResponse'])->name('feedback.admin.response');
+    Route::post('/admin/feedback/{feedback}/classify', [FeedbackAdminController::class, 'classify'])->name('feedback.admin.classify');
 
     // Manual Feedback Entry Routes
     Route::get('/admin/feedback/manual/create', [FeedbackManualController::class, 'create'])->name('feedback.manual.create');
@@ -69,7 +71,12 @@ Route::middleware('auth')->group(function () {
 
     // Feedback Report Routes
     Route::get('/reports/feedback', [FeedbackReportController::class, 'index'])->name('reports.feedback.index');
-    Route::get('/reports/feedback/export', [FeedbackReportController::class, 'export'])->name('reports.feedback.export');
+    Route::get('/reports/feedback/export/csv', [FeedbackReportController::class, 'exportCsv'])->name('reports.feedback.export.csv');
+    Route::get('/reports/feedback/export/excel', [FeedbackReportController::class, 'exportExcel'])->name('reports.feedback.export.excel');
+    Route::get('/reports/feedback/export/pdf', [FeedbackReportController::class, 'exportPdf'])->name('reports.feedback.export.pdf');
+    Route::get('/reports/weekly/export/csv', [FeedbackReportController::class, 'exportWeeklyCsv'])->name('reports.weekly.export.csv');
+    Route::get('/reports/weekly/export/excel', [FeedbackReportController::class, 'exportWeeklyExcel'])->name('reports.weekly.export.excel');
+    Route::get('/reports/weekly/export/pdf', [FeedbackReportController::class, 'exportWeeklyPdf'])->name('reports.weekly.export.pdf');
 
     // User Management Routes
     Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
@@ -79,6 +86,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/users/{user}/deactivate', [UserManagementController::class, 'deactivate'])->name('users.deactivate');
     Route::post('/users/{user}/activate', [UserManagementController::class, 'activate'])->name('users.activate');
     Route::post('/users/{user}/role', [UserManagementController::class, 'changeRole'])->name('users.role');
+
+    // Department Management (Admin only)
+    Route::resource('departments', DepartmentController::class)->except(['show']);
 
     // HOD / Incharge Management
     Route::resource('hods', HodController::class)->except(['show']);

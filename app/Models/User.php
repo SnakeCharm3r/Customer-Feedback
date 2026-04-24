@@ -188,6 +188,11 @@ class User extends Authenticatable
         return in_array($this->role, self::REPORT_ROLES, true);
     }
 
+    public function canViewWeeklyReport(): bool
+    {
+        return in_array($this->role, self::FEEDBACK_MANAGEMENT_ROLES, true);
+    }
+
     public function canApproveUsers(): bool
     {
         return $this->isAdmin() || $this->isQAHod();

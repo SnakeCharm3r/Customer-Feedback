@@ -150,16 +150,131 @@
             </div>
         </div>
 
-        {{-- Internal Notes --}}
+        {{-- Quality Assurance Assessment + Internal Notes (consolidated) --}}
+        @php $sentimentBadge = ['positive'=>'bg-success','negative'=>'bg-danger','neutral'=>'bg-secondary']; @endphp
         <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0"><i class="bi bi-sticky me-2"></i>Internal Notes
-                    <span class="badge bg-secondary ms-1">{{ $feedback->internalNotes->count() }}</span>
-                </h6>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0"><i class="bi bi-clipboard2-pulse me-2"></i>Quality Assurance Assessment</h6>
+                @if($feedback->sentiment)
+                    <span class="badge {{ $sentimentBadge[$feedback->sentiment] ?? 'bg-secondary' }}">{{ $feedback->getSentimentLabel() }}</span>
+                @endif
             </div>
-            <div class="card-body p-0">
+
+            {{-- Current classification summary --}}
+            <div class="card-body border-bottom pb-3">
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-4">
+                        <p class="text-muted small text-uppercase mb-1">Theme</p>
+                        <p class="fw-semibold mb-0">{{ $feedback->getThemeLabel() }}</p>
+                    </div>
+                    <div class="col-sm-4">
+                        <p class="text-muted small text-uppercase mb-1">Sentiment</p>
+                        <p class="fw-semibold mb-0">{{ $feedback->getSentimentLabel() }}</p>
+                    </div>
+                    <div class="col-sm-4">
+                        <p class="text-muted small text-uppercase mb-1">Wing</p>
+                        <p class="fw-semibold mb-0">{{ $feedback->getWingLabel() }}</p>
+                    </div>
+                    <div class="col-sm-4">
+                        <p class="text-muted small text-uppercase mb-1">Department Type</p>
+                        <p class="fw-semibold mb-0">{{ $feedback->getDepartmentTypeLabel() }}</p>
+                    </div>
+                    <div class="col-sm-4">
+                        <p class="text-muted small text-uppercase mb-1">Service Category</p>
+                        <p class="fw-semibold mb-0">{{ $feedback->getServiceCategoryLabel() }}</p>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ route('feedback.admin.classify', $feedback) }}">
+                    @csrf
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Theme</label>
+                            <select name="theme" class="form-select form-select-sm">
+                                <option value="">— Select theme —</option>
+                                @foreach(\App\Models\Feedback::THEMES as $key => $label)
+                                    <option value="{{ $key }}" {{ $feedback->theme === $key ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Sentiment</label>
+                            <select name="sentiment" class="form-select form-select-sm">
+                                <option value="">— Select sentiment —</option>
+                                @foreach(\App\Models\Feedback::SENTIMENTS as $key => $label)
+                                    <option value="{{ $key }}" {{ $feedback->sentiment === $key ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Wing</label>
+                            <select name="wing" class="form-select form-select-sm">
+                                <option value="">— Select wing —</option>
+                                @foreach(\App\Models\Feedback::WINGS as $key => $label)
+                                    <option value="{{ $key }}" {{ $feedback->wing === $key ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Service Category</label>
+                            <select name="service_category" class="form-select form-select-sm">
+                                <option value="">— Select category —</option>
+                                @foreach(\App\Models\Feedback::SERVICE_CATEGORIES as $key => $label)
+                                    <option value="{{ $key }}" {{ $feedback->service_category === $key ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold">Department / Service Unit</label>
+                            <select name="department_id" class="form-select form-select-sm">
+                                <option value="">— Select department —</option>
+                                @foreach($departments as $dept)
+                                    <option value="{{ $dept->id }}"
+                                        {{ ($feedback->department_id ?? null) == $dept->id ? 'selected' : '' }}>
+                                        {{ $dept->name }}
+                                        @if(!empty($dept->categories))
+                                            ({{ implode(', ', array_map(fn($c) => \App\Models\Department::CATEGORIES[$c] ?? $c, $dept->categories)) }})
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            @if($departments->isEmpty())
+                                <p class="text-muted small mt-1">
+                                    No departments configured.
+                                    <a href="{{ route('departments.create') }}">Add departments</a> to enable this field.
+                                </p>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="form-label small fw-semibold">Internal Memo</label>
+                        <textarea name="note_content" rows="3" class="form-control form-control-sm" placeholder="Add an internal note for the team (optional)..."></textarea>
+                        <p class="text-muted" style="font-size:11px;" class="mt-1">This memo will be recorded alongside the assessment changes.</p>
+                    </div>
+
+                    <div class="mt-2 d-flex justify-content-between align-items-center">
+                        <button type="submit" class="btn btn-sm btn-success px-4">
+                            <i class="bi bi-check2 me-1"></i>Save Assessment
+                        </button>
+                        @if($feedback->reviewedBy && $feedback->reviewed_at)
+                            <span class="text-muted" style="font-size:11px;">
+                                Last updated by <strong>{{ $feedback->reviewedBy->getFullName() }}</strong>
+                                on {{ $feedback->reviewed_at->format('d M Y, H:i') }}
+                            </span>
+                        @endif
+                    </div>
+                </form>
+            </div>
+
+            {{-- Internal Notes (merged into same card) --}}
+            <div class="card-body border-bottom pb-0 pt-3 px-3">
+                <p class="small fw-semibold text-muted text-uppercase mb-2">
+                    <i class="bi bi-sticky me-1"></i>Internal Notes
+                    <span class="badge bg-secondary ms-1">{{ $feedback->internalNotes->count() }}</span>
+                </p>
                 @forelse($feedback->internalNotes as $note)
-                <div class="p-3 border-bottom">
+                <div class="py-2 border-top">
                     <div class="d-flex justify-content-between align-items-start mb-1">
                         <span class="fw-semibold small text-dark">{{ $note->author?->getFullName() ?? 'System' }}</span>
                         <span class="text-muted" style="font-size:11px;">{{ $note->created_at->format('d M Y, H:i') }}</span>
@@ -170,9 +285,7 @@
                     @endif
                 </div>
                 @empty
-                <div class="text-center text-muted py-4 small">
-                    <i class="bi bi-sticky d-block fs-4 mb-1 opacity-25"></i>No internal notes yet.
-                </div>
+                <p class="text-muted small py-2">No internal notes yet.</p>
                 @endforelse
             </div>
         </div>
@@ -260,20 +373,6 @@
                     @error('status')
                         <div class="text-danger small mt-2">{{ $message }}</div>
                     @enderror
-                </div>
-
-                <div class="mb-3">
-                    <label for="note_content" class="form-label small fw-semibold">Internal Comment</label>
-                    <form method="POST" action="{{ route('feedback.admin.note', $feedback) }}">
-                        @csrf
-                        <textarea id="note_content" name="note_content" rows="4" class="form-control form-control-sm @error('note_content') is-invalid @enderror" placeholder="Add an internal review note for the team...">{{ old('note_content') }}</textarea>
-                        @error('note_content')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                        <button type="submit" class="btn btn-outline-secondary btn-sm mt-2 w-100">
-                            <i class="bi bi-sticky me-1"></i>Save Internal Comment
-                        </button>
-                    </form>
                 </div>
 
                 <div class="mb-3">

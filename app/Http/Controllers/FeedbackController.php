@@ -8,18 +8,21 @@ use Illuminate\Support\Facades\Log;
 
 class FeedbackController extends Controller
 {
-    private const SERVICE_UNIT_CATEGORY_MAP = [
-        'eye' => 'eye_surgery',
-        'orthopaedic' => 'rehabilitation',
-        'physiotherapy' => 'rehabilitation',
-        'physician' => 'outpatient',
-        'gynaecology' => 'outpatient',
-        'ent' => 'outpatient',
-        'prosthetics_orthotics' => 'rehabilitation',
-        'pharmacy' => 'pharmacy',
-        'radiology' => 'outpatient',
-        'laboratory' => 'outpatient',
-        'other' => 'other',
+    private const OPD_UNITS = [
+        'eye','orthopaedic','physiotherapy','physician','gynaecology','ent',
+        'prosthetics_orthotics','pharmacy','pediatrics','dialysis','plastic_surgery',
+        'general_surgery','radiology','dermatology','laboratory','ogd',
+    ];
+
+    private const IPD_UNITS = ['private_ward','general_ward','labour_ward'];
+
+    private const THEATRE_UNITS = ['theatre'];
+
+    private const SENTIMENT_MAP = [
+        'compliment' => 'positive',
+        'complaint'  => 'negative',
+        'suggestion' => 'neutral',
+        'enquiry'    => 'neutral',
     ];
 
     /**
@@ -40,7 +43,7 @@ class FeedbackController extends Controller
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20',
             'service_units' => 'nullable|array',
-            'service_units.*' => 'in:eye,orthopaedic,physiotherapy,physician,gynaecology,ent,prosthetics_orthotics,pharmacy,radiology,laboratory,other',
+            'service_units.*' => 'in:eye,orthopaedic,physiotherapy,physician,gynaecology,ent,prosthetics_orthotics,pharmacy,pediatrics,dialysis,plastic_surgery,general_surgery,radiology,dermatology,laboratory,ogd,private_ward,general_ward,labour_ward,theatre,other',
             'feedback_type' => 'required|in:compliment,complaint,suggestion,enquiry',
             'service_rating' => 'required|in:poor,average,good,excellent',
             'confidentiality_respected' => 'nullable|in:1,0',
@@ -63,8 +66,10 @@ class FeedbackController extends Controller
             'attachment.mimes' => __('portal.validation.attachment_mimes'),
         ]);
 
-        $serviceUnits = $validated['service_units'] ?? [];
-        $serviceCategory = $this->resolveServiceCategory($serviceUnits);
+        $serviceUnits    = $validated['service_units'] ?? [];
+        $serviceCategory  = $this->resolveServiceCategory($serviceUnits);
+        $departmentType   = $this->resolveDepartmentType($serviceUnits);
+        $defaultSentiment = self::SENTIMENT_MAP[$validated['feedback_type']] ?? 'neutral';
 
         // Generate unique reference number
         $referenceNo = Feedback::generateReferenceNo();
@@ -81,9 +86,11 @@ class FeedbackController extends Controller
             'patient_name' => $validated['patient_name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
-            'service_units' => $serviceUnits,
+            'service_units'   => $serviceUnits,
             'service_category' => $serviceCategory,
-            'feedback_type' => $validated['feedback_type'],
+            'department_type'  => $departmentType,
+            'sentiment'        => $defaultSentiment,
+            'feedback_type'    => $validated['feedback_type'],
             'service_rating' => $validated['service_rating'],
             'confidentiality_respected' => $request->filled('confidentiality_respected')
                 ? $request->boolean('confidentiality_respected')
@@ -160,12 +167,18 @@ class FeedbackController extends Controller
 
     private function resolveServiceCategory(array $serviceUnits): string
     {
-        foreach ($serviceUnits as $unit) {
-            if (isset(self::SERVICE_UNIT_CATEGORY_MAP[$unit])) {
-                return self::SERVICE_UNIT_CATEGORY_MAP[$unit];
-            }
-        }
+        $hasOpd     = !empty(array_intersect($serviceUnits, self::OPD_UNITS));
+        $hasIpd     = !empty(array_intersect($serviceUnits, self::IPD_UNITS));
+        $hasTheatre = !empty(array_intersect($serviceUnits, self::THEATRE_UNITS));
 
-        return 'other';
+        $types = array_filter([$hasOpd ? 'opd' : null, $hasIpd ? 'ipd' : null, $hasTheatre ? 'theatre' : null]);
+
+        if (count($types) > 1) return 'mixed';
+        return array_values($types)[0] ?? 'other';
+    }
+
+    private function resolveDepartmentType(array $serviceUnits): string
+    {
+        return $this->resolveServiceCategory($serviceUnits);
     }
 }

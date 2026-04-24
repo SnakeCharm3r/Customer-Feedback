@@ -121,6 +121,16 @@
                         <span>HOD Officers</span>
                     </a>
                 </li>
+
+                @if($sidebarUser->isAdmin())
+                <li class="nav-item">
+                    <a class="nav-link menu-link {{ request()->routeIs('departments.*') ? 'active' : '' }}"
+                        href="{{ route('departments.index') }}">
+                        <i class="bi bi-buildings"></i>
+                        <span>Departments</span>
+                    </a>
+                </li>
+                @endif
                 @endif
 
                 {{-- ESCALATION MATRIX — all feedback managers --}}

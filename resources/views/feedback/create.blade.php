@@ -126,25 +126,30 @@
                             </div>
 
                             @php
-                                $serviceUnits = \App\Models\Feedback::SERVICE_UNITS;
-                                $serviceRatings = \App\Models\Feedback::SERVICE_RATINGS;
+                                $serviceRatings  = \App\Models\Feedback::SERVICE_RATINGS;
+                                $allClientUnits  = \App\Models\Feedback::SERVICE_UNITS_OPD
+                                                 + \App\Models\Feedback::SERVICE_UNITS_IPD
+                                                 + \App\Models\Feedback::SERVICE_UNITS_THEATRE;
+                                $oldUnits        = old('service_units', []);
                             @endphp
 
                             <h5 class="mb-3 mt-4" style="color: var(--ccbrt-navy); border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem;">{{ __('portal.feedback_create.sections.customer_experience') }}</h5>
 
                             <div class="mb-4">
                                 <label class="form-label fw-semibold">{{ __('portal.feedback_create.questions.service_offered') }}</label>
+
                                 <div class="row row-cols-1 row-cols-md-2 g-2 mt-1">
-                                    @foreach($serviceUnits as $value => $label)
+                                    @foreach($allClientUnits as $value => $label)
                                         <div class="col">
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="service_units[]" id="service_unit_{{ $value }}"
-                                                       value="{{ $value }}" {{ in_array($value, old('service_units', [])) ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="service_unit_{{ $value }}">{{ __('portal.options.service_units.' . $value) }}</label>
+                                                <input class="form-check-input" type="checkbox" name="service_units[]" id="su_{{ $value }}"
+                                                       value="{{ $value }}" {{ in_array($value, $oldUnits) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="su_{{ $value }}">{{ $label }}</label>
                                             </div>
                                         </div>
                                     @endforeach
                                 </div>
+
                                 @error('service_units')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror

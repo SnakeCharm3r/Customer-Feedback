@@ -62,7 +62,11 @@ class FeedbackAdminController extends Controller
             ->orderBy('lname')
             ->get();
 
-        return view('feedback.admin.show', compact('feedback', 'assignableUsers'));
+        $departments = \App\Models\Department::active()
+            ->orderBy('name')
+            ->get();
+
+        return view('feedback.admin.show', compact('feedback', 'assignableUsers', 'departments'));
     }
 
     public function updateStatus(Request $request, Feedback $feedback): RedirectResponse
@@ -176,6 +180,39 @@ class FeedbackAdminController extends Controller
 
         return redirect()->route('feedback.admin.show', $feedback)
             ->with('toast', $emailed ? 'Response sent and emailed to the client.' : 'Response saved and published on the tracking portal.')
+            ->with('toast_type', 'success');
+    }
+
+    public function classify(Request $request, Feedback $feedback): RedirectResponse
+    {
+        abort_unless(Auth::user()?->canManageComplaints(), 403);
+
+        $validated = $request->validate([
+            'theme'            => ['nullable', 'string', 'in:' . implode(',', array_keys(\App\Models\Feedback::THEMES))],
+            'sentiment'        => ['nullable', 'in:positive,negative,neutral'],
+            'wing'             => ['nullable', 'in:private,maternity,standard,mixed,other'],
+            'service_category' => ['nullable', 'in:opd,ipd,theatre,mixed,other'],
+            'department_id'    => ['nullable', 'integer', 'exists:departments,id'],
+            'note_content'     => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $fields = collect($validated)->except('note_content')->filter(fn($v) => $v !== null)->toArray();
+
+        $fields['reviewed_by'] = Auth::id();
+        $fields['reviewed_at'] = now();
+
+        $feedback->update($fields);
+
+        if (!empty($validated['note_content'])) {
+            \App\Models\InternalNote::create([
+                'feedback_id' => $feedback->id,
+                'content'     => $validated['note_content'],
+                'author_id'   => Auth::id(),
+            ]);
+        }
+
+        return redirect()->route('feedback.admin.show', $feedback)
+            ->with('toast', 'Assessment saved.')
             ->with('toast_type', 'success');
     }
 }

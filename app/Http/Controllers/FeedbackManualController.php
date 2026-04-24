@@ -31,8 +31,8 @@ class FeedbackManualController extends Controller
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20',
             'service_units' => 'nullable|array',
-            'service_units.*' => 'in:eye,orthopaedic,physiotherapy,physician,gynaecology,ent,prosthetics_orthotics,pharmacy,radiology,laboratory,other',
-            'service_category' => 'required|in:outpatient,inpatient,eye_surgery,rehabilitation,pharmacy,reception_admin,billing,other',
+            'service_units.*' => 'in:eye,orthopaedic,physiotherapy,physician,gynaecology,ent,prosthetics_orthotics,pharmacy,pediatrics,dialysis,plastic_surgery,general_surgery,radiology,dermatology,laboratory,ogd,private_ward,general_ward,labour_ward,theatre,other',
+            'service_category' => 'required|in:opd,ipd,theatre,mixed,other',
             'feedback_type' => 'required|in:compliment,complaint,suggestion,enquiry',
             'service_rating' => 'required|in:poor,average,good,excellent',
             'confidentiality_respected' => 'nullable|in:1,0',
@@ -47,6 +47,8 @@ class FeedbackManualController extends Controller
         ]);
 
         $serviceUnits = $validated['service_units'] ?? [];
+        $sentimentMap = ['compliment'=>'positive','complaint'=>'negative','suggestion'=>'neutral','enquiry'=>'neutral'];
+        $defaultSentiment = $sentimentMap[$validated['feedback_type']] ?? 'neutral';
 
         $referenceNo = Feedback::generateReferenceNo();
 
@@ -57,6 +59,8 @@ class FeedbackManualController extends Controller
             'phone' => $validated['phone'],
             'service_units' => $serviceUnits,
             'service_category' => $validated['service_category'],
+            'department_type'  => $validated['service_category'],
+            'sentiment'        => $defaultSentiment,
             'feedback_type' => $validated['feedback_type'],
             'service_rating' => $validated['service_rating'],
             'confidentiality_respected' => $request->filled('confidentiality_respected')

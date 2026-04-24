@@ -19,7 +19,12 @@ class Feedback extends Model
         'email',
         'phone',
         'service_units',
+        'department_id',
         'service_category',
+        'department_type',
+        'wing',
+        'theme',
+        'sentiment',
         'feedback_type',
         'service_rating',
         'confidentiality_respected',
@@ -57,29 +62,105 @@ class Feedback extends Model
         'tegeta' => 'CCBRT Tegeta Branch',
     ];
 
+    const SERVICE_UNITS_OPD = [
+        'eye'                  => 'Eye',
+        'orthopaedic'          => 'Orthopaedic',
+        'physiotherapy'        => 'Physiotherapy',
+        'physician'            => 'Physician (Internal Medicine)',
+        'gynaecology'          => 'Gynaecology',
+        'ent'                  => 'ENT',
+        'prosthetics_orthotics'=> 'Prosthetics & Orthotics',
+        'pharmacy'             => 'Pharmacy',
+        'pediatrics'           => 'Pediatrics',
+        'dialysis'             => 'Dialysis',
+        'plastic_surgery'      => 'Plastic Surgery',
+        'general_surgery'      => 'General Surgery',
+        'radiology'            => 'Radiology',
+        'dermatology'          => 'Dermatology',
+        'laboratory'           => 'Laboratory',
+        'ogd'                  => 'OGD',
+    ];
+
+    const SERVICE_UNITS_IPD = [
+        'private_ward' => 'Private Ward',
+        'general_ward' => 'General Ward',
+        'labour_ward'  => 'Labour Ward',
+    ];
+
+    const SERVICE_UNITS_THEATRE = [
+        'theatre' => 'Theatre (OTD)',
+    ];
+
     const SERVICE_UNITS = [
-        'eye' => 'Eye',
-        'orthopaedic' => 'Orthopaedic',
-        'physiotherapy' => 'Physiotherapy',
-        'physician' => 'Physician',
-        'gynaecology' => 'Gynaecology',
-        'ent' => 'ENT',
-        'prosthetics_orthotics' => 'Prosthetics & Orthotics',
-        'pharmacy' => 'Pharmacy',
-        'radiology' => 'Radiology',
-        'laboratory' => 'Laboratory',
-        'other' => 'Other',
+        'eye'                  => 'Eye',
+        'orthopaedic'          => 'Orthopaedic',
+        'physiotherapy'        => 'Physiotherapy',
+        'physician'            => 'Physician (Internal Medicine)',
+        'gynaecology'          => 'Gynaecology',
+        'ent'                  => 'ENT',
+        'prosthetics_orthotics'=> 'Prosthetics & Orthotics',
+        'pharmacy'             => 'Pharmacy',
+        'pediatrics'           => 'Pediatrics',
+        'dialysis'             => 'Dialysis',
+        'plastic_surgery'      => 'Plastic Surgery',
+        'general_surgery'      => 'General Surgery',
+        'radiology'            => 'Radiology',
+        'dermatology'          => 'Dermatology',
+        'laboratory'           => 'Laboratory',
+        'ogd'                  => 'OGD',
+        'private_ward'         => 'Private Ward',
+        'general_ward'         => 'General Ward',
+        'labour_ward'          => 'Labour Ward',
+        'theatre'              => 'Theatre (OTD)',
+        'other'                => 'Other',
     ];
 
     const SERVICE_CATEGORIES = [
-        'outpatient' => 'Outpatient',
-        'inpatient' => 'Inpatient',
-        'eye_surgery' => 'Eye Surgery',
-        'rehabilitation' => 'Rehabilitation',
-        'pharmacy' => 'Pharmacy',
-        'reception_admin' => 'Reception / Admin',
-        'billing' => 'Billing',
-        'other' => 'Other',
+        'opd'     => 'Outpatient (OPD)',
+        'ipd'     => 'Inpatient (IPD)',
+        'theatre' => 'Theatre (OTD)',
+        'mixed'   => 'Mixed',
+        'other'   => 'Other',
+    ];
+
+    const DEPARTMENT_TYPES = [
+        'opd'     => 'OPD',
+        'ipd'     => 'IPD',
+        'theatre' => 'Theatre',
+        'mixed'   => 'Mixed',
+        'other'   => 'Other',
+    ];
+
+    const WINGS = [
+        'private'  => 'Private Wing',
+        'maternity'=> 'Maternity Wing',
+        'standard' => 'Standard Wing',
+        'mixed'    => 'Mixed',
+        'other'    => 'Other',
+    ];
+
+    const THEMES = [
+        'client_experience'          => 'Client Experience',
+        'client_outcome'             => 'Client Outcome',
+        'client_satisfaction'        => 'Client Satisfaction',
+        'customer_care_staff'        => 'Customer Care / Staff Attitude',
+        'enviro_housekeeping'        => 'Enviro / House Keeping / Facilities',
+        'general_positive_feedback'  => 'General Positive Feedback',
+        'staff_appreciation'         => 'Staff Appreciation',
+        'well_equipped'              => 'Well Equipped',
+        'delayed_slow_service'       => 'Delayed / Slow Service',
+        'few_staff'                  => 'Few Staff',
+        'inadequate_information'     => 'Inadequate Information',
+        'waiting_time'               => 'Waiting Time',
+        'billing_issues'             => 'Billing Issues',
+        'medication_issues'          => 'Medication Issues',
+        'other'                      => 'Other',
+    ];
+
+    const SENTIMENTS = [
+        'positive' => 'Positive',
+        'negative' => 'Negative',
+        'neutral'  => 'Neutral',
     ];
 
     const FEEDBACK_TYPES = [
@@ -108,6 +189,11 @@ class Feedback extends Model
         'responded' => 'Responded',
         'closed' => 'Closed',
     ];
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Department::class, 'department_id');
+    }
 
     public function assignedTo(): BelongsTo
     {
@@ -256,7 +342,27 @@ class Feedback extends Model
 
     public function getServiceCategoryLabel(): string
     {
-        return __('portal.options.service_categories.' . $this->service_category, [], app()->getLocale());
+        return self::SERVICE_CATEGORIES[$this->service_category] ?? ucfirst((string) $this->service_category);
+    }
+
+    public function getDepartmentTypeLabel(): string
+    {
+        return self::DEPARTMENT_TYPES[$this->department_type] ?? '—';
+    }
+
+    public function getWingLabel(): string
+    {
+        return self::WINGS[$this->wing] ?? '—';
+    }
+
+    public function getThemeLabel(): string
+    {
+        return self::THEMES[$this->theme] ?? '—';
+    }
+
+    public function getSentimentLabel(): string
+    {
+        return self::SENTIMENTS[$this->sentiment] ?? '—';
     }
 
     public function getServiceRatingLabel(): string
