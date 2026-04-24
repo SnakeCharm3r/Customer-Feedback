@@ -8,12 +8,24 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-0 fw-bold">Departments</h4>
-            <p class="text-muted small mb-0">Manage departments available in the Quality Assurance Assessment form.</p>
+            <p class="text-muted small mb-0">Manage department names used across the Quality Assurance Assessment form.</p>
         </div>
-        <a href="{{ route('departments.create') }}" class="btn btn-success btn-sm">
-            <i class="bi bi-plus-lg me-1"></i>Add Department
-        </a>
+        <form method="POST" action="{{ route('departments.store') }}" class="d-flex gap-2 align-items-center">
+            @csrf
+            <input type="text" name="name" value="{{ old('name') }}"
+                   class="form-control form-control-sm @error('name') is-invalid @enderror"
+                   placeholder="New department name" required>
+            <input type="hidden" name="is_active" value="1">
+            <button type="submit" class="btn btn-success btn-sm text-nowrap">
+                <i class="bi bi-plus-lg me-1"></i>Add
+            </button>
+            <a href="{{ route('departments.create') }}" class="btn btn-outline-secondary btn-sm text-nowrap">Advanced</a>
+        </form>
     </div>
+
+    @error('name')
+        <div class="text-danger small mb-3">{{ $message }}</div>
+    @enderror
 
     @if(session('toast'))
         <div class="alert alert-{{ session('toast_type') === 'success' ? 'success' : 'danger' }} alert-dismissible fade show" role="alert">
@@ -38,7 +50,24 @@
                 <tbody>
                     @forelse($departments as $dept)
                     <tr>
-                        <td class="ps-3 fw-semibold">{{ $dept->name }}</td>
+                        <td class="ps-3" style="min-width:280px;">
+                            <form method="POST" action="{{ route('departments.update', $dept) }}" class="d-flex align-items-center gap-2">
+                                @csrf
+                                @method('PUT')
+                                <input type="text" name="name" value="{{ $dept->name }}" class="form-control form-control-sm" required>
+
+                                @foreach($dept->categories ?? [] as $cat)
+                                    <input type="hidden" name="categories[]" value="{{ $cat }}">
+                                @endforeach
+                                <input type="hidden" name="hod_id" value="{{ $dept->hod_id }}">
+                                <input type="hidden" name="description" value="{{ $dept->description }}">
+                                <input type="hidden" name="is_active" value="{{ $dept->is_active ? 1 : 0 }}">
+
+                                <button type="submit" class="btn btn-sm btn-outline-success" title="Save Name">
+                                    <i class="bi bi-check2"></i>
+                                </button>
+                            </form>
+                        </td>
                         <td>
                             @forelse($dept->categories ?? [] as $cat)
                                 <span class="badge bg-primary-subtle text-primary me-1">
