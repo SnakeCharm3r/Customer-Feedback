@@ -44,7 +44,7 @@
 
                 @if($sidebarUser)
 
-                {{-- FEEDBACK MANAGEMENT — QA Officer, Call Center, QA HOD, Admin, COO --}}
+                {{-- FEEDBACK MANAGEMENT — Quality Assurance Officer, Call Center, Quality Assurance HOD, Admin, COO --}}
                 @if($sidebarUser->canManageComplaints())
                 <li class="menu-title"><span>Feedback</span></li>
 
@@ -77,7 +77,7 @@
                 </li>
                 @endif
 
-                {{-- REPORTS — Admin, QA HOD, COO --}}
+                {{-- REPORTS — Admin, Quality Assurance HOD, COO --}}
                 @if($sidebarUser->canViewReports())
                 <li class="menu-title"><span>Reports</span></li>
 
@@ -90,7 +90,7 @@
                 </li>
                 @endif
 
-                {{-- USER MANAGEMENT — Admin, QA HOD --}}
+                {{-- USER MANAGEMENT — Admin, Quality Assurance HOD --}}
                 @if($sidebarUser->canManageUsers())
                 <li class="menu-title"><span>Administration</span></li>
 
@@ -110,6 +110,29 @@
                         @php $pending = \App\Models\User::where('is_active', false)->where('is_first_user', false)->count(); @endphp
                         @if($pending > 0)
                             <span class="badge bg-warning text-dark ms-auto">{{ $pending }}</span>
+                        @endif
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link {{ request()->routeIs('hods.*') ? 'active' : '' }}"
+                        href="{{ route('hods.index') }}">
+                        <i class="bi bi-diagram-3"></i>
+                        <span>HOD Officers</span>
+                    </a>
+                </li>
+                @endif
+
+                {{-- ESCALATION MATRIX — all feedback managers --}}
+                @if($sidebarUser->canManageComplaints())
+                <li class="nav-item">
+                    <a class="nav-link menu-link {{ request()->routeIs('escalations.index') ? 'active' : '' }}"
+                        href="{{ route('escalations.index') }}">
+                        <i class="bi bi-arrow-up-right-circle"></i>
+                        <span>Escalation Matrix</span>
+                        @php $pendingEsc = \App\Models\Escalation::where('status','pending')->count(); @endphp
+                        @if($pendingEsc > 0)
+                            <span class="badge ms-auto" style="background:#f59e0b; color:#fff;">{{ $pendingEsc }}</span>
                         @endif
                     </a>
                 </li>

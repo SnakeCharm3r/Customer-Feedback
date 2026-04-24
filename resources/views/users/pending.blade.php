@@ -57,9 +57,9 @@
                         @csrf
                         <select name="role" class="form-select form-select-sm" style="min-width:200px;" required>
                             <option value="">-- Assign Role --</option>
-                            <option value="qa_officer"  {{ $user->role=='qa_officer'  ? 'selected':'' }}>QA Officer</option>
+                            <option value="qa_officer"  {{ $user->role=='qa_officer'  ? 'selected':'' }}>Quality Assurance Officer</option>
                             <option value="call_center" {{ $user->role=='call_center' ? 'selected':'' }}>Call Center</option>
-                            <option value="qa_hod"      {{ $user->role=='qa_hod'      ? 'selected':'' }}>QA Head of Department</option>
+                            <option value="qa_hod"      {{ $user->role=='qa_hod'      ? 'selected':'' }}>Quality Assurance Head of Department</option>
                             <option value="coo"         {{ $user->role=='coo'         ? 'selected':'' }}>Chief Operating Officer</option>
                             <option value="line_manager" {{ $user->role=='line_manager' ? 'selected':'' }}>Line Manager</option>
                         </select>

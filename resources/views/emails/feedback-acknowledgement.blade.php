@@ -131,7 +131,7 @@
             <div class="steps">
                 <h3>What happens next?</h3>
                 <ol>
-                    <li><strong>Review:</strong> Our QA team will review your feedback within 2-3 business days</li>
+                    <li><strong>Review:</strong> Our Quality Assurance team will review your feedback within 2-3 business days</li>
                     <li><strong>Investigation:</strong> We may investigate the matter with relevant departments</li>
                     <li><strong>Response:</strong> We may contact you if additional information is needed</li>
                     <li><strong>Resolution:</strong> We take action based on your feedback to improve our services</li>

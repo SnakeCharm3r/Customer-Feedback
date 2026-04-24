@@ -70,21 +70,15 @@ class FeedbackAdminController extends Controller
         abort_unless(Auth::user()?->canManageComplaints(), 403);
 
         $validated = $request->validate([
-            'status' => ['required', 'in:' . implode(',', array_keys(Feedback::STATUSES))],
+            'status' => ['required', 'in:responded,closed'],
         ]);
 
         $payload = [
-            'status' => $validated['status'],
+            'status'      => $validated['status'],
             'resolved_at' => $validated['status'] === 'closed' ? now() : null,
+            'reviewed_by' => Auth::id(),
+            'reviewed_at' => now(),
         ];
-
-        if ($validated['status'] === 'new') {
-            $payload['reviewed_by'] = null;
-            $payload['reviewed_at'] = null;
-        } else {
-            $payload['reviewed_by'] = Auth::id();
-            $payload['reviewed_at'] = now();
-        }
 
         $feedback->update($payload);
 
@@ -170,12 +164,18 @@ class FeedbackAdminController extends Controller
             'resolved_at' => now(),
         ]);
 
+        $emailed = false;
         if ($feedback->patient_email) {
-            Mail::to($feedback->patient_email)->send(new FeedbackResponseMail($feedback, $response));
+            try {
+                Mail::to($feedback->patient_email)->send(new FeedbackResponseMail($feedback, $response));
+                $emailed = true;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to send response email: ' . $e->getMessage());
+            }
         }
 
         return redirect()->route('feedback.admin.show', $feedback)
-            ->with('toast', $feedback->patient_email ? 'Response sent and emailed to the client.' : 'Response saved and published on the tracking portal.')
+            ->with('toast', $emailed ? 'Response sent and emailed to the client.' : 'Response saved and published on the tracking portal.')
             ->with('toast_type', 'success');
     }
 }

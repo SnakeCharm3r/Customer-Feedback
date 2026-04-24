@@ -35,6 +35,13 @@
                     </ul>
                 </div>
 
+                <!-- Confidentiality Disclaimer -->
+                <div class="alert mb-4" style="background-color: #f0f7f4; border-left: 4px solid var(--ccbrt-teal); border-radius: 6px;">
+                    <h6 class="mb-2" style="color: var(--ccbrt-teal);"><i class="bi bi-shield-lock me-2"></i>Confidentiality &amp; Privacy Notice</h6>
+                    <p class="mb-2 small">All information submitted through this form is treated with the strictest confidentiality. Your feedback will only be used to improve our services and will never be shared, disclosed, or used in any way that could harm or identify you without your consent.</p>
+                    <p class="mb-0 small"><strong>Personal information (name, email, phone number) is entirely optional.</strong> You may submit your feedback anonymously and it will still be reviewed and acted upon by our Quality Assurance team.</p>
+                </div>
+
                 <!-- Form Card -->
                 <div class="card card-ccbrt">
                     <div class="card-header">
@@ -62,7 +69,7 @@
 
                             <div class="row mb-4">
                                 <div class="col-md-6 mb-3">
-                                    <label for="patient_name" class="form-label">{{ __('portal.feedback_create.fields.full_name') }}</label>
+                                    <label for="patient_name" class="form-label">{{ __('portal.feedback_create.fields.full_name') }} <span class="text-muted fw-normal small">({{ __('portal.common.optional') }})</span></label>
                                     <input type="text" class="form-control form-control-ccbrt @error('patient_name') is-invalid @enderror" 
                                            id="patient_name" name="patient_name" value="{{ old('patient_name') }}"
                                            placeholder="{{ __('portal.feedback_create.fields.full_name_placeholder') }}">
@@ -71,7 +78,7 @@
                                     @enderror
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="email" class="form-label">{{ __('portal.feedback_create.fields.email') }}</label>
+                                    <label for="email" class="form-label">{{ __('portal.feedback_create.fields.email') }} <span class="text-muted fw-normal small">({{ __('portal.common.optional') }})</span></label>
                                     <input type="email" class="form-control form-control-ccbrt @error('email') is-invalid @enderror" 
                                            id="email" name="email" value="{{ old('email') }}"
                                            placeholder="{{ __('portal.feedback_create.fields.email_placeholder') }}">
@@ -84,7 +91,7 @@
 
                             <div class="row mb-4">
                                 <div class="col-md-6 mb-3">
-                                    <label for="phone" class="form-label">{{ __('portal.feedback_create.fields.phone') }}</label>
+                                    <label for="phone" class="form-label">{{ __('portal.feedback_create.fields.phone') }} <span class="text-muted fw-normal small">({{ __('portal.common.optional') }})</span></label>
                                     <input type="tel" class="form-control form-control-ccbrt @error('phone') is-invalid @enderror" 
                                            id="phone" name="phone" value="{{ old('phone') }}"
                                            placeholder="{{ __('portal.feedback_create.fields.phone_placeholder') }}">
@@ -97,6 +104,22 @@
                                     <input type="date" class="form-control form-control-ccbrt @error('visit_date') is-invalid @enderror" 
                                            id="visit_date" name="visit_date" value="{{ old('visit_date') }}">
                                     @error('visit_date')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-3">
+                                    <label for="location" class="form-label">CCBRT Location <span class="text-muted fw-normal small">({{ __('portal.common.optional') }})</span></label>
+                                    <select class="form-select form-control-ccbrt @error('location') is-invalid @enderror"
+                                            id="location" name="location">
+                                        <option value="">— Select the branch you visited —</option>
+                                        @foreach(\App\Models\Feedback::LOCATIONS as $value => $label)
+                                            <option value="{{ $value }}" {{ old('location') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('location')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -130,6 +153,36 @@
                                 @enderror
                             </div>
 
+                            {{-- TYPE OF FEEDBACK (moved here, right after Q1) --}}
+                            <div class="mb-4">
+                                <label class="form-label required fw-semibold">{{ __('portal.feedback_create.fields.feedback_type') }}</label>
+                                <div class="d-flex flex-wrap gap-3 mt-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_compliment"
+                                               value="compliment" {{ old('feedback_type') == 'compliment' ? 'checked' : '' }} required>
+                                        <label class="form-check-label" for="type_compliment">{{ __('portal.options.feedback_types.compliment') }}</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_complaint"
+                                               value="complaint" {{ old('feedback_type') == 'complaint' ? 'checked' : '' }} required>
+                                        <label class="form-check-label" for="type_complaint">{{ __('portal.options.feedback_types.complaint') }}</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_suggestion"
+                                               value="suggestion" {{ old('feedback_type') == 'suggestion' ? 'checked' : '' }} required>
+                                        <label class="form-check-label" for="type_suggestion">{{ __('portal.options.feedback_types.suggestion') }}</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_enquiry"
+                                               value="enquiry" {{ old('feedback_type') == 'enquiry' ? 'checked' : '' }} required>
+                                        <label class="form-check-label" for="type_enquiry">{{ __('portal.options.feedback_types.enquiry') }}</label>
+                                    </div>
+                                </div>
+                                @error('feedback_type')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                             <div class="mb-4">
                                 <label class="form-label required fw-semibold">{{ __('portal.feedback_create.questions.service_rating') }}</label>
                                 <div class="d-flex flex-wrap gap-3 mt-2">
@@ -145,6 +198,9 @@
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </div>
+
+                            {{-- Fields hidden when feedback_type = compliment --}}
+                            <div id="non-compliment-fields">
 
                             <div class="row mb-4">
                                 <div class="col-lg-6 mb-3">
@@ -196,46 +252,18 @@
                                 @enderror
                             </div>
 
+                            </div>{{-- end #non-compliment-fields --}}
+
                             <h5 class="mb-3 mt-4" style="color: var(--ccbrt-navy); border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem;">{{ __('portal.feedback_create.sections.additional_details') }}</h5>
 
-                            <div class="row mb-4">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label required">{{ __('portal.feedback_create.fields.feedback_type') }}</label>
-                                    <div class="d-flex flex-wrap gap-3 mt-2">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="feedback_type" id="type_compliment"
-                                                   value="compliment" {{ old('feedback_type') == 'compliment' ? 'checked' : '' }} required>
-                                            <label class="form-check-label" for="type_compliment">{{ __('portal.options.feedback_types.compliment') }}</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="feedback_type" id="type_complaint"
-                                                   value="complaint" {{ old('feedback_type') == 'complaint' ? 'checked' : '' }} required>
-                                            <label class="form-check-label" for="type_complaint">{{ __('portal.options.feedback_types.complaint') }}</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="feedback_type" id="type_suggestion"
-                                                   value="suggestion" {{ old('feedback_type') == 'suggestion' ? 'checked' : '' }} required>
-                                            <label class="form-check-label" for="type_suggestion">{{ __('portal.options.feedback_types.suggestion') }}</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="feedback_type" id="type_enquiry"
-                                                   value="enquiry" {{ old('feedback_type') == 'enquiry' ? 'checked' : '' }} required>
-                                            <label class="form-check-label" for="type_enquiry">{{ __('portal.options.feedback_types.enquiry') }}</label>
-                                        </div>
-                                    </div>
-                                    @error('feedback_type')
-                                        <div class="text-danger small mt-1">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="message" class="form-label">{{ __('portal.feedback_create.fields.message') }}</label>
-                                    <textarea class="form-control form-control-ccbrt @error('message') is-invalid @enderror"
-                                              id="message" name="message" rows="4"
-                                              placeholder="{{ __('portal.feedback_create.fields.message_placeholder') }}">{{ old('message') }}</textarea>
-                                    @error('message')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
+                            <div class="mb-4">
+                                <label for="message" class="form-label">{{ __('portal.feedback_create.fields.message') }}</label>
+                                <textarea class="form-control form-control-ccbrt @error('message') is-invalid @enderror"
+                                          id="message" name="message" rows="4"
+                                          placeholder="{{ __('portal.feedback_create.fields.message_placeholder') }}">{{ old('message') }}</textarea>
+                                @error('message')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             <div class="mb-4">
@@ -293,15 +321,13 @@
 
 @push('scripts')
 <script>
+    // --- Overall experience character counter ---
     const overallExperienceField = document.getElementById('overall_experience');
     const overallExperienceCount = document.getElementById('overallExperienceCount');
-    const overallExperienceHelp = document.getElementById('overallExperienceHelp');
+    const overallExperienceHelp  = document.getElementById('overallExperienceHelp');
 
     const syncOverallExperienceHelp = function(length) {
-        if (!overallExperienceCount || !overallExperienceHelp) {
-            return;
-        }
-
+        if (!overallExperienceCount || !overallExperienceHelp) return;
         overallExperienceCount.textContent = length;
         overallExperienceHelp.innerHTML = overallExperienceHelp.dataset.template.replace('__COUNT__', String(length)).replace('__COUNT__', String(length));
         overallExperienceHelp.prepend(overallExperienceCount);
@@ -313,8 +339,35 @@
         overallExperienceField.addEventListener('input', function() {
             syncOverallExperienceHelp(this.value.length);
         });
-
         syncOverallExperienceHelp(overallExperienceField.value.length);
     }
+
+    // --- Show / hide complaint-specific fields based on feedback type ---
+    const nonComplimentBlock = document.getElementById('non-compliment-fields');
+    const feedbackTypeRadios = document.querySelectorAll('input[name="feedback_type"]');
+
+    function applyFeedbackTypeVisibility(type) {
+        const isCompliment = (type === 'compliment');
+
+        if (isCompliment) {
+            nonComplimentBlock.style.display = 'none';
+            if (overallExperienceField) overallExperienceField.required = false;
+        } else {
+            nonComplimentBlock.style.display = '';
+            if (overallExperienceField) overallExperienceField.required = true;
+        }
+    }
+
+    feedbackTypeRadios.forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            applyFeedbackTypeVisibility(this.value);
+        });
+    });
+
+    // Set correct initial state on page load (handles old() values after validation)
+    (function() {
+        const checked = document.querySelector('input[name="feedback_type"]:checked');
+        applyFeedbackTypeVisibility(checked ? checked.value : '');
+    })();
 </script>
 @endpush

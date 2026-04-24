@@ -81,7 +81,7 @@
                 <div class="card card-ccbrt">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>{{ __('portal.feedback_track.details_title') }}</h5>
-                        <span class="badge bg-{{ $feedback->status == 'new' ? 'primary' : ($feedback->status == 'under_review' ? 'warning' : ($feedback->status == 'responded' ? 'info' : 'secondary')) }} fs-6">
+                        <span class="badge bg-{{ $feedback->status == 'new' ? 'primary' : ($feedback->status == 'responded' ? 'info' : 'secondary') }} fs-6">
                             {{ $feedback->getStatusLabel() }}
                         </span>
                     </div>
@@ -95,19 +95,12 @@
                         <!-- Status Timeline -->
                         <h6 class="mb-3 mt-4" style="color: var(--ccbrt-navy);">{{ __('portal.feedback_track.status_timeline_title') }}</h6>
                         <div class="status-timeline mb-4">
-                            <div class="status-step {{ in_array($feedback->status, ['new', 'under_review', 'responded', 'closed']) ? 'completed' : '' }}
+                            <div class="status-step {{ in_array($feedback->status, ['new', 'responded', 'closed']) ? 'completed' : '' }}
                                         {{ $feedback->status == 'new' ? 'active' : '' }}">
                                 <div class="status-dot">
                                     <i class="bi bi-inbox"></i>
                                 </div>
                                 <div class="status-label">{{ __('portal.options.statuses.new') }}</div>
-                            </div>
-                            <div class="status-step {{ in_array($feedback->status, ['under_review', 'responded', 'closed']) ? 'completed' : '' }}
-                                        {{ $feedback->status == 'under_review' ? 'active' : '' }}">
-                                <div class="status-dot">
-                                    <i class="bi bi-search"></i>
-                                </div>
-                                <div class="status-label">{{ __('portal.options.statuses.under_review') }}</div>
                             </div>
                             <div class="status-step {{ in_array($feedback->status, ['responded', 'closed']) ? 'completed' : '' }}
                                         {{ $feedback->status == 'responded' ? 'active' : '' }}">

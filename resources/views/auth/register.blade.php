@@ -83,9 +83,9 @@
                     <label for="role" class="form-label small fw-semibold">Requested Role <span class="text-danger">*</span></label>
                      <select id="role" name="role" class="form-select @error('role') is-invalid @enderror" required>
                          <option value="">-- Select your role --</option>
-                         <option value="qa_officer"  {{ old('role')=='qa_officer'  ?'selected':'' }}>QA Officer</option>
+                         <option value="qa_officer"  {{ old('role')=='qa_officer'  ?'selected':'' }}>Quality Assurance Officer</option>
                          <option value="call_center" {{ old('role')=='call_center' ?'selected':'' }}>Call Center</option>
-                         <option value="qa_hod"      {{ old('role')=='qa_hod'      ?'selected':'' }}>QA Head of Department</option>
+                         <option value="qa_hod"      {{ old('role')=='qa_hod'      ?'selected':'' }}>Quality Assurance Head of Department</option>
                          <option value="coo"         {{ old('role')=='coo'         ?'selected':'' }}>Chief Operating Officer</option>
                         <option value="line_manager" {{ old('role')=='line_manager' ?'selected':'' }}>Line Manager</option>
                      </select>

@@ -65,6 +65,10 @@
                         <p class="fw-semibold mb-0">{{ $feedback->visit_date ? \Carbon\Carbon::parse($feedback->visit_date)->format('d M Y') : '—' }}</p>
                     </div>
                     <div class="col-sm-6 col-md-3">
+                        <p class="text-muted small text-uppercase mb-1">Location</p>
+                        <p class="fw-semibold mb-0">{{ \App\Models\Feedback::LOCATIONS[$feedback->location] ?? '—' }}</p>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
                         <p class="text-muted small text-uppercase mb-1">Category</p>
                         <p class="fw-semibold mb-0">{{ $feedback->getServiceCategoryLabel() }}</p>
                     </div>
@@ -248,10 +252,8 @@
                     <form method="POST" action="{{ route('feedback.admin.status', $feedback) }}" class="d-flex gap-2">
                         @csrf
                         <select name="status" class="form-select form-select-sm">
-                            <option value="new"          {{ $feedback->status=='new'          ?'selected':'' }}>New</option>
-                            <option value="under_review" {{ $feedback->status=='under_review' ?'selected':'' }}>Under Review</option>
-                            <option value="responded"    {{ $feedback->status=='responded'    ?'selected':'' }}>Responded</option>
-                            <option value="closed"       {{ $feedback->status=='closed'       ?'selected':'' }}>Closed</option>
+                            <option value="responded" {{ $feedback->status=='responded' ?'selected':'' }}>Responded</option>
+                            <option value="closed"    {{ $feedback->status=='closed'    ?'selected':'' }}>Closed</option>
                         </select>
                         <button type="submit" class="btn btn-primary btn-sm">Save</button>
                     </form>
@@ -278,6 +280,53 @@
                     <label for="response_content" class="form-label small fw-semibold">Client Response</label>
                     <form method="POST" action="{{ route('feedback.admin.response', $feedback) }}">
                         @csrf
+
+                        {{-- Canned response templates --}}
+                        @php
+                        $templates = [
+                            'compliment' => [
+                                ['label' => 'Generic – English',   'text' => "Thank you for your kind feedback regarding our services at CCBRT. We are truly grateful for your encouraging words and will share them with the team involved. It motivates us to continue providing excellent care. We look forward to serving you again and wish you good health. Welcome to CCBRT."],
+                                ['label' => 'Generic – Swahili',   'text' => "Asante kwa mrejesho uliotuandikia kuhusu huduma zetu. Tunashukuru sana maneno yako ya moyo na tutayashirikisha na timu inayohusika. Yanaturahisishea kuendelea kutoa huduma bora. Tunakutakia afya njema. Karibu CCBRT."],
+                                ['label' => 'Team Recognition – English', 'text' => "Thank you so much for taking the time to share your positive experience with us. Your kind words have been passed on to the team and serve as a great encouragement. We remain committed to providing you and all our patients with the highest standard of care. We wish you good health and look forward to welcoming you again at CCBRT."],
+                                ['label' => 'Team Recognition – Swahili', 'text' => "Asante sana kwa muda uliochukua kushiriki uzoefu wako mzuri. Maneno yako ya moyo yamepitishwa kwa timu na ni motisha kubwa kwao. Tunaendelea kujitolea kutoa huduma bora zaidi. Tunakutakia afya njema na tunatarajia kukuona tena CCBRT."],
+                            ],
+                            'complaint' => [
+                                ['label' => 'Acknowledgement & Investigation – English', 'text' => "Thank you for bringing this matter to our attention. We sincerely apologise for the experience you had and assure you that your concern has been taken seriously. We are currently investigating the issue and will take the necessary corrective action. Your feedback helps us improve the quality of our services. We value you as our patient and hope to restore your confidence in CCBRT."],
+                                ['label' => 'Acknowledgement & Investigation – Swahili', 'text' => "Asante kwa kuleta suala hili kwa uangalifu wetu. Tunaomba msamaha kwa uzoefu uliokupata na tunakuhakikishia kwamba wasiwasi wako umechukuliwa kwa uzito. Tunachunguza tatizo hili sasa hivi na tutachukua hatua zinazohitajika. Maoni yako yanatusaidia kuboresha ubora wa huduma zetu. Tunakuthamini kama mgonjwa wetu na tunatumai kurudisha imani yako kwa CCBRT."],
+                                ['label' => 'Resolved – English', 'text' => "Thank you for your patience while we looked into your concern. We have reviewed the matter and appropriate action has been taken to address the issue and prevent recurrence. We deeply regret any inconvenience caused and remain committed to providing you with the highest quality of care. Please do not hesitate to reach out if you require any further assistance. We wish you good health."],
+                                ['label' => 'Resolved – Swahili', 'text' => "Asante kwa uvumilivu wako wakati tulipochunguza wasiwasi wako. Tumepitia suala hili na hatua zinazofaa zimechukuliwa kushughulikia tatizo na kuzuia kujirudia. Tunaomba msamaha kwa usumbufu wowote uliosababishwa. Tuko tayari kukusaidia ukihitaji msaada zaidi. Tunakutakia afya njema."],
+                            ],
+                            'suggestion' => [
+                                ['label' => 'Valued Suggestion – English', 'text' => "Thank you for your thoughtful suggestion. We greatly value the input of our patients and community in helping us improve our services. Your suggestion has been forwarded to the relevant department for consideration. We appreciate you taking the time to help us grow and provide better care for everyone. Welcome to CCBRT."],
+                                ['label' => 'Valued Suggestion – Swahili', 'text' => "Asante kwa pendekezo lako la kina. Tunathamini sana maoni ya wagonjwa wetu na jamii katika kutusaidia kuboresha huduma zetu. Pendekezo lako limepelekwa kwa idara husika kwa kuzingatiwa. Tunashukuru kwa muda uliochukua kutusaidia kukua na kutoa huduma bora zaidi kwa kila mtu. Karibu CCBRT."],
+                                ['label' => 'Implemented – English', 'text' => "Thank you for your valuable suggestion. We are pleased to inform you that your feedback has been reviewed and the relevant team is actively working on implementing improvements based on your recommendation. Your contribution makes a real difference in the quality of care we provide. We wish you good health and thank you for being part of the CCBRT family."],
+                                ['label' => 'Implemented – Swahili', 'text' => "Asante kwa pendekezo lako la thamani. Tunafurahi kukuarifu kwamba maoni yako yamekaguliwa na timu husika inafanya kazi kikamilifu kutekeleza maboresho kulingana na mapendekezo yako. Mchango wako unafanya tofauti halisi katika ubora wa huduma tunazotoa. Tunakutakia afya njema na asante kwa kuwa sehemu ya familia ya CCBRT."],
+                            ],
+                            'enquiry' => [
+                                ['label' => 'General Enquiry Response – English', 'text' => "Thank you for contacting CCBRT. We have received your enquiry and are pleased to assist you. Please find the relevant information addressed below. Should you require any further clarification, do not hesitate to reach out to us directly. We are here to help and wish you good health. Welcome to CCBRT."],
+                                ['label' => 'General Enquiry Response – Swahili', 'text' => "Asante kwa kuwasiliana na CCBRT. Tumepokea swali lako na tunafurahi kukusaidia. Tafadhali pata taarifa husika zilizoshughulikiwa hapa chini. Iwapo unahitaji ufafanuzi zaidi, usisite kuwasiliana nasi moja kwa moja. Tuko hapa kukusaidia na tunakutakia afya njema. Karibu CCBRT."],
+                                ['label' => 'Referral / Appointment – English', 'text' => "Thank you for your enquiry. To assist you further, we recommend visiting our facility or contacting our front desk team directly. Our staff will be happy to guide you through the process and ensure you receive the appropriate care. We look forward to serving you at CCBRT and wish you good health."],
+                                ['label' => 'Referral / Appointment – Swahili', 'text' => "Asante kwa swali lako. Ili kukusaidia zaidi, tunapendekeza utembelee kituo chetu au uwasiliane na timu yetu ya mapokezi moja kwa moja. Wafanyakazi wetu watafurahi kukuongoza kupitia mchakato huu na kuhakikisha unapata huduma inayofaa. Tunatarajia kukuhudumia CCBRT na tunakutakia afya njema."],
+                            ],
+                        ];
+                        $feedbackType = $feedback->feedback_type ?? 'compliment';
+                        $typeTemplates = $templates[$feedbackType] ?? $templates['compliment'];
+                        @endphp
+
+                        <div class="mb-2">
+                            <label for="response_template" class="form-label small text-muted">
+                                <i class="bi bi-lightning me-1"></i>Quick Template
+                                <span class="badge bg-secondary ms-1" style="font-size:10px;">{{ ucfirst($feedbackType) }}</span>
+                            </label>
+                            <select id="response_template" class="form-select form-select-sm"
+                                    onchange="if(this.value){document.getElementById('response_content').value=this.value;this.value='';}">
+                                <option value="">— Select a template to pre-fill —</option>
+                                @foreach($typeTemplates as $tpl)
+                                    <option value="{{ $tpl['text'] }}">{{ $tpl['label'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <textarea id="response_content" name="response_content" rows="5" class="form-control form-control-sm @error('response_content') is-invalid @enderror" placeholder="Write the response that should appear on the tracking portal and be emailed to the client...">{{ old('response_content') }}</textarea>
                         @error('response_content')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -287,6 +336,67 @@
                             <i class="bi bi-send me-1"></i>Send Response to Client
                         </button>
                     </form>
+                </div>
+
+                <hr>
+
+                {{-- ESCALATION SECTION --}}
+                <div class="mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="form-label small fw-semibold mb-0" style="color:#065321;">
+                            <i class="bi bi-arrow-up-right-circle me-1"></i> Escalate to HOD / Incharge
+                        </label>
+                        @php $escalations = $feedback->escalations()->with('hod')->latest()->get(); @endphp
+                        @if($escalations->count())
+                            <span class="badge" style="background:#fff3cd; color:#856404; border:1px solid #ffc107;">
+                                {{ $escalations->count() }} escalation(s)
+                            </span>
+                        @endif
+                    </div>
+
+                    @if($escalations->count())
+                    <div class="mb-3">
+                        @foreach($escalations as $esc)
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded mb-1"
+                             style="background:#f6fbf4; border:1px solid #ddeedd; font-size:12px;">
+                            <div>
+                                <span class="fw-semibold" style="color:#065321; font-family:monospace;">{{ $esc->reference }}</span>
+                                &nbsp;&rarr;&nbsp; {{ $esc->hod?->name }} ({{ $esc->hod?->department }})
+                                &nbsp;&bull;&nbsp; {{ $esc->escalated_at->diffForHumans() }}
+                            </div>
+                            @if($esc->isPending())
+                                <span class="badge" style="background:#fff3cd; color:#856404;">Pending</span>
+                            @else
+                                <span class="badge" style="background:#eef7e8; color:#065321;">Responded</span>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
+
+                    @php $activeHods = \App\Models\Hod::active()->orderBy('department')->orderBy('name')->get(); @endphp
+                    @if($activeHods->isEmpty())
+                        <div class="alert alert-warning py-2 small mb-0">
+                            No HOD officers configured yet.
+                            <a href="{{ route('hods.create') }}" style="color:#065321;">Add officers</a> to enable escalation.
+                        </div>
+                    @else
+                    <form method="POST" action="{{ route('escalations.store', $feedback) }}">
+                        @csrf
+                        <select name="hod_id" class="form-select form-select-sm mb-2 @error('hod_id') is-invalid @enderror" required>
+                            <option value="">— Select officer to escalate to —</option>
+                            @foreach($activeHods as $hod)
+                                <option value="{{ $hod->id }}">{{ $hod->name }} — {{ $hod->department }}</option>
+                            @endforeach
+                        </select>
+                        @error('hod_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <textarea name="message" class="form-control form-control-sm mb-2" rows="2"
+                                  placeholder="Optional message to the HOD (e.g. specific area to address)..."></textarea>
+                        <button type="submit" class="btn btn-sm w-100 fw-semibold text-white" style="background:#b45309;">
+                            <i class="bi bi-arrow-up-right-circle me-1"></i> Escalate This Feedback
+                        </button>
+                    </form>
+                    @endif
                 </div>
 
                 <hr>

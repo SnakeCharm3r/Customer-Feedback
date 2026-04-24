@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\EscalationController;
 use App\Http\Controllers\FeedbackAdminController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FeedbackManualController;
 use App\Http\Controllers\FeedbackReportController;
+use App\Http\Controllers\HodController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Http\Request;
@@ -77,6 +79,18 @@ Route::middleware('auth')->group(function () {
     Route::post('/users/{user}/deactivate', [UserManagementController::class, 'deactivate'])->name('users.deactivate');
     Route::post('/users/{user}/activate', [UserManagementController::class, 'activate'])->name('users.activate');
     Route::post('/users/{user}/role', [UserManagementController::class, 'changeRole'])->name('users.role');
+
+    // HOD / Incharge Management
+    Route::resource('hods', HodController::class)->except(['show']);
+
+    // Escalation Admin Routes
+    Route::get('/escalations', [EscalationController::class, 'index'])->name('escalations.index');
+    Route::post('/admin/feedback/{feedback}/escalate', [EscalationController::class, 'store'])->name('escalations.store');
 });
+
+// Public HOD Response Routes (token-based, no login)
+Route::get('/escalations/respond/{token}', [EscalationController::class, 'respond'])->name('escalations.respond');
+Route::post('/escalations/respond/{token}', [EscalationController::class, 'submitResponse'])->name('escalations.submit');
+Route::get('/escalations/done/{token}', [EscalationController::class, 'done'])->name('escalations.done');
 
 require __DIR__.'/auth.php';

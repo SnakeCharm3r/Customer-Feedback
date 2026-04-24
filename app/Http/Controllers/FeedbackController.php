@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Feedback;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class FeedbackController extends Controller
 {
@@ -47,7 +46,8 @@ class FeedbackController extends Controller
             'confidentiality_respected' => 'nullable|in:1,0',
             'confidentiality_comment' => 'nullable|string|max:1000|required_if:confidentiality_respected,0',
             'visit_date' => 'nullable|date',
-            'overall_experience' => 'required|string|min:10',
+            'location' => 'nullable|in:' . implode(',', array_keys(\App\Models\Feedback::LOCATIONS)),
+            'overall_experience' => 'required_unless:feedback_type,compliment|nullable|string|min:10',
             'improvement_suggestion' => 'nullable|string|max:2000',
             'message' => 'nullable|string|max:2000',
             'is_urgent' => 'boolean',
@@ -55,6 +55,7 @@ class FeedbackController extends Controller
             'consent_given' => 'required|boolean',
         ], [
             'overall_experience.min' => __('portal.validation.overall_experience_min'),
+            'overall_experience.required_unless' => __('portal.validation.overall_experience_min'),
             'service_rating.required' => __('portal.validation.service_rating_required'),
             'confidentiality_comment.required_if' => __('portal.validation.confidentiality_comment_required_if'),
             'consent_given.required' => __('portal.validation.consent_required'),
@@ -89,7 +90,8 @@ class FeedbackController extends Controller
                 : null,
             'confidentiality_comment' => $validated['confidentiality_comment'] ?? null,
             'visit_date' => $validated['visit_date'],
-            'overall_experience' => $validated['overall_experience'],
+            'location' => $validated['location'] ?? null,
+            'overall_experience' => $validated['overall_experience'] ?? null,
             'improvement_suggestion' => $validated['improvement_suggestion'] ?? null,
             'message' => $validated['message'] ?? '',
             'is_urgent' => $request->boolean('is_urgent'),
@@ -98,11 +100,6 @@ class FeedbackController extends Controller
             'source' => 'portal',
             'status' => 'new',
         ]);
-
-        // Send auto-acknowledgement email if email provided
-        if ($validated['email']) {
-            $this->sendAcknowledgementEmail($feedback);
-        }
 
         // Redirect to confirmation page
         return redirect()->route('feedback.confirmation', ['reference' => $referenceNo])
@@ -159,29 +156,6 @@ class FeedbackController extends Controller
         $publicResponse = $feedback->getPublicResponse();
 
         return view('feedback.track', compact('feedback', 'publicResponse'));
-    }
-
-    /**
-     * Send acknowledgement email to patient
-     */
-    private function sendAcknowledgementEmail(Feedback $feedback)
-    {
-        try {
-            $data = [
-                'patientName' => $feedback->patient_name ?? 'Valued Patient',
-                'referenceNo' => $feedback->reference_no,
-                'hospitalName' => 'CCBRT Hospital',
-                'appUrl' => config('app.url'),
-            ];
-
-            Mail::send('emails.feedback-acknowledgement', $data, function ($message) use ($feedback) {
-                $message->to($feedback->email)
-                    ->subject("Thank you for your feedback - {$feedback->reference_no}");
-            });
-        } catch (\Exception $e) {
-            // Log the error but don't fail the submission
-            Log::error('Failed to send acknowledgement email: ' . $e->getMessage());
-        }
     }
 
     private function resolveServiceCategory(array $serviceUnits): string

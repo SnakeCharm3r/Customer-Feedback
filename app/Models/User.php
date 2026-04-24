@@ -50,9 +50,9 @@ class User extends Authenticatable
     {
         return [
             self::ROLE_ADMIN => 'Administrator',
-            self::ROLE_QA_OFFICER => 'QA Officer',
+            self::ROLE_QA_OFFICER => 'Quality Assurance Officer',
             self::ROLE_CALL_CENTER => 'Call Center',
-            self::ROLE_QA_HOD => 'QA Head of Department',
+            self::ROLE_QA_HOD => 'Quality Assurance Head of Department',
             self::ROLE_COO => 'Chief Operating Officer',
             self::ROLE_LINE_MANAGER => 'Line Manager',
         ];

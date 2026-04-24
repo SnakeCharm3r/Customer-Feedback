@@ -31,9 +31,6 @@
                     </h5>
                     <p class="mb-0">
                         {{ __('portal.feedback_confirmation.success_message') }}
-                        @if($feedback->email)
-                            {{ __('portal.feedback_confirmation.success_email', ['email' => $feedback->email]) }}
-                        @endif
                     </p>
                 </div>
 

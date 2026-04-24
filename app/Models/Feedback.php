@@ -25,6 +25,7 @@ class Feedback extends Model
         'confidentiality_respected',
         'confidentiality_comment',
         'visit_date',
+        'location',
         'overall_experience',
         'improvement_suggestion',
         'message',
@@ -48,6 +49,12 @@ class Feedback extends Model
         'consent_given' => 'boolean',
         'reviewed_at' => 'datetime',
         'resolved_at' => 'datetime',
+    ];
+
+    const LOCATIONS = [
+        'hq'     => 'CCBRT Hospital HQ',
+        'moshi'  => 'CCBRT Moshi',
+        'tegeta' => 'CCBRT Tegeta Branch',
     ];
 
     const SERVICE_UNITS = [
@@ -125,6 +132,11 @@ class Feedback extends Model
     public function patientResponses(): HasMany
     {
         return $this->hasMany(PatientResponse::class, 'feedback_id');
+    }
+
+    public function escalations(): HasMany
+    {
+        return $this->hasMany(Escalation::class, 'feedback_id');
     }
 
     public function getPublicResponse(): ?PatientResponse
