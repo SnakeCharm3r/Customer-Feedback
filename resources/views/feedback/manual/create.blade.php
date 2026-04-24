@@ -63,6 +63,16 @@
                     <div class="section-divider">Service Information</div>
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
+                            <label for="collection_means" class="form-label small fw-semibold">Collection Means <span class="text-danger">*</span></label>
+                            <select id="collection_means" name="collection_means" class="form-select tom-select-single @error('collection_means') is-invalid @enderror" required>
+                                <option value="">-- How was feedback collected? --</option>
+                                @foreach(\App\Models\Feedback::COLLECTION_MEANS as $value => $label)
+                                    <option value="{{ $value }}" {{ old('collection_means') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('collection_means')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
                             <label for="service_category" class="form-label small fw-semibold">Service Category <span class="text-danger">*</span></label>
                             <select id="service_category" name="service_category" class="form-select tom-select-single @error('service_category') is-invalid @enderror" required>
                                 <option value="">-- Select Category --</option>
@@ -81,6 +91,37 @@
                                 @endforeach
                             </select>
                             @error('feedback_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="sentiment" class="form-label small fw-semibold">Sentiment</label>
+                            <select id="sentiment" name="sentiment" class="form-select tom-select-single @error('sentiment') is-invalid @enderror">
+                                <option value="">-- Auto-detect from type or select --</option>
+                                @foreach(\App\Models\Feedback::SENTIMENTS as $value => $label)
+                                    <option value="{{ $value }}" {{ old('sentiment') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <div class="form-text text-muted" style="font-size:11px;">Leave blank to auto-set from Feedback Type.</div>
+                            @error('sentiment')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="theme" class="form-label small fw-semibold">Theme</label>
+                            <select id="theme" name="theme" class="form-select tom-select-single @error('theme') is-invalid @enderror">
+                                <option value="">-- Select Theme --</option>
+                                @foreach(\App\Models\Feedback::THEMES as $value => $label)
+                                    <option value="{{ $value }}" {{ old('theme') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('theme')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="wing" class="form-label small fw-semibold">Wing</label>
+                            <select id="wing" name="wing" class="form-select tom-select-single @error('wing') is-invalid @enderror">
+                                <option value="">-- Select Wing --</option>
+                                @foreach(\App\Models\Feedback::WINGS as $value => $label)
+                                    <option value="{{ $value }}" {{ old('wing') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('wing')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
                             <label for="service_rating" class="form-label small fw-semibold">Service Rating <span class="text-danger">*</span></label>

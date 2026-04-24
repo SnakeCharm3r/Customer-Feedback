@@ -178,9 +178,21 @@ class Feedback extends Model
     ];
 
     const SOURCES = [
-        'portal' => 'Portal',
-        'manual' => 'Manual / Paper Form',
-        'other' => 'Other',
+        'portal'     => 'Portal',
+        'manual'     => 'Manual / Paper Form',
+        'calls'      => 'Calls',
+        'walk_in'    => 'Walk In',
+        'ward_visit' => 'Ward Visit',
+        'paper_form' => 'Paper Form',
+        'other'      => 'Other',
+    ];
+
+    const COLLECTION_MEANS = [
+        'calls'       => 'Calls',
+        'walk_in'     => 'Walk In',
+        'ward_visit'  => 'Ward Visit',
+        'paper_form'  => 'Paper Form',
+        'other'       => 'Other',
     ];
 
     const STATUSES = [

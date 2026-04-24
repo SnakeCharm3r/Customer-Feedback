@@ -77,15 +77,15 @@
                 </li>
                 @endif
 
-                {{-- REPORTS — Admin, Quality Assurance HOD, COO --}}
-                @if($sidebarUser->canViewReports())
+                {{-- REPORTS — all feedback management roles see Weekly; Admin/COO/Line Manager also see Feedback Report --}}
+                @if($sidebarUser->canViewWeeklyReport())
                 <li class="menu-title"><span>Reports</span></li>
 
                 <li class="nav-item">
                     <a class="nav-link menu-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
                         href="{{ route('reports.feedback.index') }}">
                         <i class="bi bi-bar-chart-line"></i>
-                        <span>Feedback Reports</span>
+                        <span>Reports</span>
                     </a>
                 </li>
                 @endif

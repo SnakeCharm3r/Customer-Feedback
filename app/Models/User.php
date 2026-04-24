@@ -41,7 +41,6 @@ class User extends Authenticatable
     const REPORT_ROLES = [
         self::ROLE_ADMIN,
         self::ROLE_COO,
-        self::ROLE_QA_HOD,
         self::ROLE_LINE_MANAGER,
     ];
 

@@ -34,6 +34,10 @@ class FeedbackReportController extends Controller
             ? $this->buildWeeklyQuery($request)->paginate(50)->appends($request->query())
             : null;
 
+        $collectionMeans = $canViewWeeklyReport
+            ? $this->buildCollectionMeans($request)
+            : [];
+
         $summary  = $this->buildSummary();
         $reviewers = $this->reviewUsers();
         $assignableUsers = $this->assignableUsers();
@@ -44,6 +48,7 @@ class FeedbackReportController extends Controller
         return view('reports.feedback', [
             'reports'              => $reports,
             'weekly'               => $weekly,
+            'collectionMeans'      => $collectionMeans,
             'summary'              => $summary,
             'reviewers'            => $reviewers,
             'assignableUsers'      => $assignableUsers,
@@ -124,6 +129,29 @@ class FeedbackReportController extends Controller
                     ->orWhere('message', 'like', "%{$s}%"));
             })
             ->orderByDesc('created_at');
+    }
+
+    private function buildCollectionMeans(Request $request): array
+    {
+        $rows = Feedback::query()
+            ->when($request->filled('month'), fn(Builder $q) => $q->whereMonth('created_at', $request->integer('month')))
+            ->when($request->filled('year'),  fn(Builder $q) => $q->whereYear('created_at',  $request->integer('year')))
+            ->selectRaw('source, COUNT(*) as cnt')
+            ->groupBy('source')
+            ->orderByDesc('cnt')
+            ->get();
+
+        $total = $rows->sum('cnt');
+        $result = [];
+        foreach ($rows as $row) {
+            $result[] = [
+                'source' => $row->source,
+                'label'  => Feedback::SOURCES[$row->source] ?? ucfirst((string) $row->source),
+                'count'  => $row->cnt,
+                'pct'    => $total > 0 ? round(($row->cnt / $total) * 100, 1) : 0,
+            ];
+        }
+        return ['rows' => $result, 'total' => $total];
     }
 
     private function buildWeeklyQuery(Request $request): Builder

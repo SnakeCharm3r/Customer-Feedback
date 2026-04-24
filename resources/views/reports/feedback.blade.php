@@ -75,6 +75,12 @@
             <i class="bi bi-calendar-week me-1"></i>Weekly Report
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="collection-means-tab"
+                data-bs-toggle="tab" data-bs-target="#collectionMeans" type="button" role="tab">
+            <i class="bi bi-pie-chart me-1"></i>Collection Means
+        </button>
+    </li>
     @endif
 </ul>
 
@@ -402,7 +408,97 @@
     </div>
     @endif
 
+    {{-- ===================== TAB 3: COLLECTION MEANS ===================== --}}
+    @if($canViewWeeklyReport)
+    <div class="tab-pane fade p-3" id="collectionMeans" role="tabpanel">
+
+        <p class="text-muted small mb-3">Breakdown of feedback submissions by collection means, derived from the weekly report dataset.</p>
+
+        {{-- Date filters (shared) --}}
+        <form method="GET" action="{{ route('reports.feedback.index') }}" class="row g-2 align-items-end mb-4">
+            <input type="hidden" name="_tab" value="collection-means">
+            <div class="col-auto">
+                <label class="form-label small fw-semibold mb-1">Month</label>
+                <select name="month" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @foreach($months as $num => $name)
+                        <option value="{{ $num }}" {{ $activeMonth === $num ? 'selected' : '' }}>{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small fw-semibold mb-1">Year</label>
+                <select name="year" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @foreach($availableYears as $yr)
+                        <option value="{{ $yr }}" {{ $activeYear === (int)$yr ? 'selected' : '' }}>{{ $yr }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-auto">
+                <div class="d-flex gap-1 mt-3">
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+                    <a href="{{ route('reports.feedback.index', ['_tab' => 'collection-means']) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i></a>
+                </div>
+            </div>
+        </form>
+
+        <div class="row g-4 align-items-start">
+            {{-- Summary Table --}}
+            <div class="col-md-5 col-lg-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size:13px;">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-2">Collection Means</th>
+                                <th class="text-end">Count</th>
+                                <th class="text-end pe-2">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($collectionMeans['rows'] ?? [] as $cm)
+                            <tr>
+                                <td class="ps-2 fw-semibold">{{ $cm['label'] }}</td>
+                                <td class="text-end">{{ number_format($cm['count']) }}</td>
+                                <td class="text-end pe-2">{{ $cm['pct'] }}%</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted">No data available.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                        @if(($collectionMeans['total'] ?? 0) > 0)
+                        <tfoot>
+                            <tr class="fw-bold table-light">
+                                <td class="ps-2">Grand Total</td>
+                                <td class="text-end">{{ number_format($collectionMeans['total']) }}</td>
+                                <td class="text-end pe-2">100%</td>
+                            </tr>
+                        </tfoot>
+                        @endif
+                    </table>
+                </div>
+            </div>
+
+            {{-- Pie Chart --}}
+            <div class="col-md-7 col-lg-5">
+                @if(($collectionMeans['total'] ?? 0) > 0)
+                <div style="max-width:360px;">
+                    <canvas id="collectionMeansChart"></canvas>
+                </div>
+                @else
+                <p class="text-muted small">No data to chart.</p>
+                @endif
+            </div>
+        </div>
+    </div>
+    @endif
+
 </div>
+
+{{-- Chart.js (loaded before the init script) --}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 
 {{-- Preserve active tab on page load --}}
 <script>
@@ -411,7 +507,53 @@ document.addEventListener('DOMContentLoaded', function () {
     if (tab === 'weekly') {
         var el = document.getElementById('weekly-tab');
         if (el) { new bootstrap.Tab(el).show(); }
+    } else if (tab === 'collection-means') {
+        var el = document.getElementById('collection-means-tab');
+        if (el) { new bootstrap.Tab(el).show(); }
     }
+
+    {{-- Chart.js pie --}}
+    @if(($collectionMeans['total'] ?? 0) > 0)
+    var ctx = document.getElementById('collectionMeansChart');
+    if (ctx) {
+        var labels = @json(array_column($collectionMeans['rows'], 'label'));
+        var counts = @json(array_column($collectionMeans['rows'], 'count'));
+        var pcts   = @json(array_column($collectionMeans['rows'], 'pct'));
+        var palette = ['#4C88D4','#F47C3C','#9E9E9E','#4CAF50','#E91E63','#9C27B0'];
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: counts,
+                    backgroundColor: palette.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 12 } } },
+                    title: {
+                        display: true,
+                        text: 'COLLECTION MEANS',
+                        font: { size: 14, weight: 'bold' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                var i = ctx.dataIndex;
+                                return ' ' + labels[i] + ': ' + counts[i] + ' (' + pcts[i] + '%)';
+                            }
+                        }
+                    },
+                    datalabels: false
+                }
+            }
+        });
+    }
+    @endif
 });
 </script>
 @endsection
