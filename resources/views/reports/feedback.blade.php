@@ -50,74 +50,109 @@
 </div>
 
 @if($canViewFeedbackReport)
-<div class="card mb-4">
-    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <h5 class="card-title mb-0"><i class="bi bi-funnel me-2"></i>Report Filters</h5>
-        <a href="{{ route('reports.feedback.export.csv', request()->query()) }}" class="btn btn-success btn-sm">
-            <i class="bi bi-download me-1"></i>Export CSV
-        </a>
-    </div>
-    <div class="card-body">
-        <form method="GET" action="{{ route('reports.feedback.index') }}" class="row g-3">
-            <div class="col-md-6 col-lg-3">
-                <label for="search" class="form-label small fw-semibold">Search</label>
-                <input type="text" id="search" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control"
-                       placeholder="Reference, patient, or report text">
-            </div>
-            <div class="col-md-6 col-lg-2">
-                <label for="source" class="form-label small fw-semibold">Source</label>
-                <select id="source" name="source" class="form-select">
-                    <option value="">All Sources</option>
-                    @foreach(\App\Models\Feedback::SOURCES as $value => $label)
-                        <option value="{{ $value }}" {{ ($filters['source'] ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-6 col-lg-2">
-                <label for="status" class="form-label small fw-semibold">Status</label>
-                <select id="status" name="status" class="form-select">
-                    <option value="">All Statuses</option>
-                    @foreach(\App\Models\Feedback::STATUSES as $value => $label)
-                        <option value="{{ $value }}" {{ ($filters['status'] ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-6 col-lg-2">
-                <label for="reviewed_by" class="form-label small fw-semibold">Reviewer</label>
-                <select id="reviewed_by" name="reviewed_by" class="form-select">
-                    <option value="">All Reviewers</option>
-                    @foreach($reviewers as $reviewer)
-                        <option value="{{ $reviewer->id }}" {{ (string) ($filters['reviewed_by'] ?? '') === (string) $reviewer->id ? 'selected' : '' }}>{{ $reviewer->getFullName() }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-6 col-lg-2">
-                <label for="assigned_to" class="form-label small fw-semibold">Assigned User</label>
-                <select id="assigned_to" name="assigned_to" class="form-select">
-                    <option value="">All Assignees</option>
-                    @foreach($assignableUsers as $assignableUser)
-                        <option value="{{ $assignableUser->id }}" {{ (string) ($filters['assigned_to'] ?? '') === (string) $assignableUser->id ? 'selected' : '' }}>{{ $assignableUser->getFullName() }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-12 d-flex gap-2 justify-content-end">
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary btn-sm px-3">
-                        <i class="bi bi-search me-1"></i>Apply Filters
-                    </button>
-                    <a href="{{ route('reports.feedback.index') }}" class="btn btn-outline-secondary btn-sm px-3">
-                        <i class="bi bi-x-lg me-1"></i>Reset
-                    </a>
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <form method="GET" action="{{ route('reports.feedback.index') }}">
+            <div class="row g-2 align-items-end">
+
+                {{-- Search --}}
+                <div class="col-12 col-md-6 col-xl-3">
+                    <label class="form-label small fw-semibold mb-1">Search</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
+                               class="form-control border-start-0 ps-0"
+                               placeholder="Reference, patient, report text…">
+                    </div>
                 </div>
+
+                {{-- Source --}}
+                <div class="col-6 col-md-3 col-xl-2">
+                    <label class="form-label small fw-semibold mb-1">Source</label>
+                    <select name="source" class="form-select form-select-sm">
+                        <option value="">All Sources</option>
+                        @foreach(\App\Models\Feedback::SOURCES as $value => $label)
+                            <option value="{{ $value }}" {{ ($filters['source'] ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Status --}}
+                <div class="col-6 col-md-3 col-xl-2">
+                    <label class="form-label small fw-semibold mb-1">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All Statuses</option>
+                        @foreach(\App\Models\Feedback::STATUSES as $value => $label)
+                            <option value="{{ $value }}" {{ ($filters['status'] ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Feedback Type --}}
+                <div class="col-6 col-md-3 col-xl-2">
+                    <label class="form-label small fw-semibold mb-1">Type</label>
+                    <select name="feedback_type" class="form-select form-select-sm">
+                        <option value="">All Types</option>
+                        @foreach(\App\Models\Feedback::FEEDBACK_TYPES as $value => $label)
+                            <option value="{{ $value }}" {{ ($filters['feedback_type'] ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Reviewer --}}
+                <div class="col-6 col-md-3 col-xl-2">
+                    <label class="form-label small fw-semibold mb-1">Reviewer</label>
+                    <select name="reviewed_by" class="form-select form-select-sm">
+                        <option value="">All Reviewers</option>
+                        @foreach($reviewers as $reviewer)
+                            <option value="{{ $reviewer->id }}" {{ (string)($filters['reviewed_by'] ?? '') === (string)$reviewer->id ? 'selected' : '' }}>{{ $reviewer->getFullName() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Actions --}}
+                <div class="col-12 col-xl-auto ms-xl-auto">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn btn-primary btn-sm px-3">
+                            <i class="bi bi-funnel me-1"></i>Filter
+                        </button>
+                        @if(array_filter($filters ?? []))
+                        <a href="{{ route('reports.feedback.index') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                        @endif
+                    </div>
+                </div>
+
             </div>
         </form>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h5 class="card-title mb-0"><i class="bi bi-table me-2"></i>Feedback Report Table</h5>
-        <span class="badge bg-secondary">{{ $reports->total() }} records</span>
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+        <div class="d-flex align-items-center gap-2">
+            <h5 class="card-title mb-0 small fw-bold text-uppercase" style="letter-spacing:.05em;">Results</h5>
+            <span class="badge bg-secondary rounded-pill">{{ $reports->total() }}</span>
+            @if(array_filter($filters ?? []))
+                <span class="badge bg-primary-subtle text-primary" style="font-size:10px;">
+                    <i class="bi bi-funnel me-1"></i>Filtered
+                </span>
+            @endif
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('reports.feedback.export.csv', request()->query()) }}" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-filetype-csv me-1"></i>CSV
+            </a>
+            <a href="{{ route('reports.feedback.export.excel', request()->query()) }}" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-file-earmark-excel me-1"></i>Excel
+            </a>
+            <a href="{{ route('reports.feedback.export.pdf', request()->query()) }}" class="btn btn-outline-danger btn-sm" target="_blank">
+                <i class="bi bi-filetype-pdf me-1"></i>PDF
+            </a>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
