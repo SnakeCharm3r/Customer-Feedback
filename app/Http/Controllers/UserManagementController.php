@@ -18,13 +18,42 @@ class UserManagementController extends Controller
     /**
      * Display list of all users
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', User::class);
 
-        $users = User::with('approvedBy')
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $query = User::with('approvedBy')->orderBy('created_at', 'desc');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('fname', 'like', "%{$s}%")
+                  ->orWhere('lname', 'like', "%{$s}%")
+                  ->orWhere('name', 'like', "%{$s}%")
+                  ->orWhere('email', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+
+        if ($request->filled('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'pending') {
+                $query->where('is_active', false)->where('is_first_user', false);
+            }
+        }
+
+        $users = $query->paginate(20)->withQueryString();
+
+        $stats = [
+            'total'   => User::count(),
+            'active'  => User::where('is_active', true)->count(),
+            'pending' => User::where('is_active', false)->where('is_first_user', false)->count(),
+            'admins'  => User::whereIn('role', ['admin', 'qa_hod'])->count(),
+        ];
 
         $pendingUsers = collect();
         $pendingCount = 0;
@@ -38,7 +67,7 @@ class UserManagementController extends Controller
             $pendingUsers = $pendingQuery->limit(5)->get();
         }
 
-        return view('users.index', compact('users', 'pendingUsers', 'pendingCount'));
+        return view('users.index', compact('users', 'pendingUsers', 'pendingCount', 'stats'));
     }
 
     /**

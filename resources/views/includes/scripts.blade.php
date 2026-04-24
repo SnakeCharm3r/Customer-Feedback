@@ -67,6 +67,8 @@
       });
    </script>
 
+   @stack('scripts')
+
    @if(session('toast'))
    <script>
       document.addEventListener('DOMContentLoaded', function () {

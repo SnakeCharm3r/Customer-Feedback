@@ -91,6 +91,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('departments', DepartmentController::class)->except(['show']);
 
     // HOD / Incharge Management
+    Route::get('/hods/import', [HodController::class, 'importCandidates'])->name('hods.import.candidates');
+    Route::post('/hods/import', [HodController::class, 'import'])->name('hods.import');
     Route::resource('hods', HodController::class)->except(['show']);
 
     // Escalation Admin Routes

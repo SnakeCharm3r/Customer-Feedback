@@ -271,6 +271,67 @@
             background-color: var(--ccbrt-brand-500) !important;
             color: var(--ccbrt-brand-text) !important;
         }
+
+        /* ── Responsive overrides ── */
+
+        /* Topbar: prevent notification dropdown from overflowing viewport on mobile */
+        @media (max-width: 575.98px) {
+            .dropdown-menu-lg {
+                width: calc(100vw - 1.5rem) !important;
+                max-width: 340px;
+            }
+
+            /* Page title bar: stack heading and right-side controls vertically */
+            .page-title-box {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 0.5rem;
+            }
+
+            /* Notification dropdown stays within screen */
+            #notificationDropdown .dropdown-menu {
+                right: -4rem;
+                left: auto;
+            }
+
+            /* Card body padding reduction on mobile */
+            .card-body {
+                padding: 1rem;
+            }
+
+            /* Sidebar status pipeline links: ensure text wraps */
+            .hover-bg-light {
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            /* Table cells: reduce horizontal padding so tables breathe */
+            .table th,
+            .table td {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+
+            /* Dashboard stat cards: reduce icon margin */
+            .avatar-sm {
+                width: 2.5rem;
+                height: 2.5rem;
+            }
+
+            /* Alert actions: give the button full width on mobile when alert wraps */
+            .alert .btn.flex-shrink-0 {
+                align-self: flex-start;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            /* Actions panel in feedback detail: ensure it doesn't overflow */
+            .feedback-detail-sticky-card {
+                position: static !important;
+            }
+        }
     </style>
 
     <!-- jsvectormap css -->
