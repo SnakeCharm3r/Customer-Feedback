@@ -151,6 +151,36 @@
 </div>
 @endif
 
+@if($authUser->isAdmin())
+<div class="row g-3 mb-1">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm" style="border-left:4px solid #0b6b2c !important;">
+            <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-success-subtle text-success"><i class="bi bi-gear me-1"></i>System Settings</span>
+                        <span class="text-muted small">Administrator access</span>
+                    </div>
+                    <h5 class="mb-1 fw-bold">Manage logo, favicon, emails, and login protection</h5>
+                    <p class="mb-0 text-muted small">
+                        Update branding assets, public contact details, outgoing mail identity, and login attempt limits from one place.
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-3 align-items-center">
+                    <div class="text-muted small text-end">
+                        <div><strong>Contact:</strong> {{ $systemSettings?->contact_email ?: 'Not set' }}</div>
+                        <div><strong>Security:</strong> {{ $systemSettings?->login_max_attempts ?? 5 }} attempts / {{ $systemSettings?->login_lockout_minutes ?? 1 }} minute lockout</div>
+                    </div>
+                    <a href="{{ route('settings.edit') }}" class="btn btn-primary fw-semibold">
+                        <i class="bi bi-sliders me-1"></i>Open Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 {{-- ══════════════════════════════════════════════════════════════════════
      ROW 1 — STAT CARDS
 ══════════════════════════════════════════════════════════════════════ --}}

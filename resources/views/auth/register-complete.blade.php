@@ -2,10 +2,10 @@
 <div class="auth-card">
     <div class="auth-header">
         <div class="auth-brand">
-            <img src="{{ asset('assets/images/ccbrt-logo.svg') }}" alt="CCBRT Logo" class="auth-brand-logo">
+            <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo" class="auth-brand-logo">
             <div class="auth-brand-copy">
-                <div class="logo-text">CCBRT</div>
-                <div class="logo-sub">Feedback Management System</div>
+                <div class="logo-text">{{ $systemSettings?->organization_name ?? 'CCBRT' }}</div>
+                <div class="logo-sub">{{ $systemSettings?->portal_name ?? 'Feedback Management System' }}</div>
             </div>
         </div>
     </div>

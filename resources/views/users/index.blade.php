@@ -3,31 +3,147 @@
 
 @section('content')
 
+<style>
+    .users-toolbar {
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 1rem;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .users-summary-card {
+        border: 1px solid rgba(11, 107, 44, 0.08);
+        border-radius: 1.1rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .users-summary-card__icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        flex-shrink: 0;
+    }
+
+    .users-pending-card {
+        border: 1px solid rgba(245, 158, 11, 0.24);
+        border-left: 4px solid #f59e0b;
+        border-radius: 1.1rem;
+        box-shadow: 0 12px 28px rgba(245, 158, 11, 0.08);
+    }
+
+    .users-filter-card,
+    .users-table-card {
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 1.1rem;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+    }
+
+    .users-filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(11, 107, 44, 0.08);
+        color: #0b6b2c;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .users-table thead th {
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+    }
+
+    .users-table tbody tr {
+        transition: background-color 0.18s ease, transform 0.18s ease;
+    }
+
+    .users-table tbody tr:hover {
+        background: rgba(11, 107, 44, 0.03);
+    }
+
+    .user-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, #065321, #0b6b2c);
+        box-shadow: 0 8px 18px rgba(6, 83, 33, 0.18);
+        flex-shrink: 0;
+    }
+
+    .users-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        justify-content: flex-end;
+    }
+
+    @media (max-width: 575.98px) {
+        .users-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+</style>
+
 @php
     $authUser   = auth()->user();
     $roleColors = ['admin'=>'primary','qa_hod'=>'info','qa_officer'=>'success','call_center'=>'warning','coo'=>'danger','line_manager'=>'dark'];
     $hasFilters = request()->hasAny(['search','role','status']);
+    $activeFilters = array_filter([
+        request('search') ? 'Search: ' . request('search') : null,
+        request('role') ? 'Role: ' . (
+            \App\Models\User::getRoleLabels()[request('role')] ?? request('role')
+        ) : null,
+        request('status') ? 'Status: ' . ucfirst(request('status')) : null,
+    ]);
 @endphp
 
-{{-- ── Page Title ──────────────────────────────────────────────────────── --}}
-<div class="row">
+<div class="row mb-3">
     <div class="col-12">
-        <div class="page-title-box d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <div>
-                <h4 class="mb-0">User Management</h4>
-                <p class="text-muted mb-0 small mt-1">Manage system staff accounts, roles and access</p>
+        <div class="users-toolbar p-3 p-lg-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <div class="text-uppercase fw-semibold text-muted mb-1" style="font-size:11px;letter-spacing:.08em;">Administration</div>
+                    <h4 class="mb-1">User Management</h4>
+                    <p class="text-muted mb-0 small">Manage system staff accounts, approvals, roles, and access in one place.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    @if($pendingCount > 0)
+                    <a href="{{ route('users.pending') }}" class="btn btn-warning btn-sm fw-semibold">
+                        <i class="bi bi-person-check me-1"></i>Pending Approvals
+                        <span class="badge bg-dark ms-1">{{ $pendingCount }}</span>
+                    </a>
+                    @endif
+                    <a href="{{ route('dashboard') }}" class="btn btn-outline-light btn-sm fw-semibold">
+                        <i class="bi bi-arrow-left me-1"></i>Dashboard
+                    </a>
+                </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
-                @if($pendingCount > 0)
-                <a href="{{ route('users.pending') }}" class="btn btn-warning btn-sm">
-                    <i class="bi bi-person-check me-1"></i>Pending
-                    <span class="badge bg-dark ms-1">{{ $pendingCount }}</span>
-                </a>
-                @endif
-                <ol class="breadcrumb m-0">
+
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-3 border-top">
+                <ol class="breadcrumb m-0 small">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
                     <li class="breadcrumb-item active">Users</li>
                 </ol>
+                <span class="text-muted">•</span>
+                <span class="small text-muted">{{ $stats['total'] }} total users</span>
             </div>
         </div>
     </div>
@@ -56,16 +172,26 @@
     @endphp
     @foreach($statCards as $card)
     <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm h-100" style="border-left:3px solid var(--bs-{{ $card['color'] }}) !important;">
+        <div class="card users-summary-card h-100" style="border-left:3px solid var(--bs-{{ $card['color'] }}) !important;">
             <div class="card-body py-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-{{ $card['color'] }}-subtle flex-shrink-0"
-                         style="width:42px;height:42px;font-size:18px;">
+                    <div class="users-summary-card__icon bg-{{ $card['color'] }}-subtle text-{{ $card['color'] }}">
                         <i class="bi {{ $card['icon'] }} text-{{ $card['color'] }}"></i>
                     </div>
                     <div>
                         <div class="fw-bold fs-4 lh-1 text-dark">{{ $card['val'] }}</div>
                         <div class="text-muted small">{{ $card['label'] }}</div>
+                        <div class="text-muted" style="font-size:11px;">
+                            @if($card['label'] === 'Pending')
+                                Needs review before access
+                            @elseif($card['label'] === 'Active')
+                                Currently allowed to sign in
+                            @elseif($card['label'] === 'Admins / HODs')
+                                Elevated access roles
+                            @else
+                                Registered system accounts
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -76,7 +202,7 @@
 
 {{-- ── Pending Banner ──────────────────────────────────────────────────── --}}
 @if($pendingCount > 0 && $authUser->canManageUsers())
-<div class="card border-warning mb-3" style="border-left:4px solid #ffc107 !important;">
+<div class="card users-pending-card mb-3">
     <div class="card-body py-3">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div class="d-flex align-items-center gap-3">
@@ -114,7 +240,7 @@
 @endif
 
 {{-- ── Filters ─────────────────────────────────────────────────────────── --}}
-<div class="card mb-3">
+<div class="card users-filter-card mb-3">
     <div class="card-body py-3">
         <form method="GET" action="{{ route('users.index') }}">
             <div class="row g-2 align-items-end">
@@ -158,12 +284,21 @@
                     </div>
                 </div>
             </div>
+
+            @if($hasFilters)
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-3 border-top">
+                <span class="small fw-semibold text-muted">Active filters:</span>
+                @foreach($activeFilters as $filter)
+                <span class="users-filter-chip">{{ $filter }}</span>
+                @endforeach
+            </div>
+            @endif
         </form>
     </div>
 </div>
 
 {{-- ── Users Table ─────────────────────────────────────────────────────── --}}
-<div class="card">
+<div class="card users-table-card">
     <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2 py-2">
         <div class="d-flex align-items-center gap-2">
             <h5 class="card-title mb-0 small fw-bold text-uppercase" style="letter-spacing:.05em;">
@@ -182,14 +317,14 @@
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" style="font-size:13px;">
-                <thead style="background:#f8f9fa;">
+            <table class="table users-table table-hover align-middle mb-0" style="font-size:13px;">
+                <thead>
                     <tr>
-                        <th class="ps-3 py-3 fw-semibold text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">User</th>
-                        <th class="py-3 fw-semibold text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">Role</th>
-                        <th class="py-3 fw-semibold text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">Status</th>
-                        <th class="py-3 fw-semibold text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">Approved By</th>
-                        <th class="py-3 fw-semibold text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">Joined</th>
+                        <th class="ps-3 py-3">User</th>
+                        <th class="py-3">Role</th>
+                        <th class="py-3">Status</th>
+                        <th class="py-3">Approved By</th>
+                        <th class="py-3">Joined</th>
                         <th class="py-3 text-end pe-3" style="width:130px;"></th>
                     </tr>
                 </thead>
@@ -199,8 +334,7 @@
                     <tr>
                         <td class="ps-3 py-3">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
-                                     style="width:36px;height:36px;font-size:13px;background:linear-gradient(135deg,#065321,#0b6b2c);">
+                                <div class="user-avatar">
                                     {{ strtoupper(substr($user->fname ?? $user->name,0,1)) }}{{ strtoupper(substr($user->lname ?? '',0,1)) }}
                                 </div>
                                 <div>
@@ -247,25 +381,27 @@
                             <div class="text-muted" style="font-size:11px;">{{ $user->created_at->diffForHumans() }}</div>
                         </td>
                         <td class="text-end pe-3 py-3">
-                            <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-primary me-1">
-                                <i class="bi bi-eye me-1"></i>View
-                            </a>
-                            @if(!$user->is_first_user && $user->id !== $authUser->id && $authUser->canManageUsers())
-                                @if($user->is_active)
-                                <form method="POST" action="{{ route('users.deactivate', $user) }}" class="d-inline">
-                                    @csrf
-                                    <button type="submit"
-                                        onclick="return confirm('Deactivate {{ addslashes($user->getFullName()) }}?')"
-                                        class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-person-x"></i>
-                                    </button>
-                                </form>
-                                @else
-                                <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-success">
-                                    <i class="bi bi-person-check"></i>
+                            <div class="users-actions">
+                                <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="bi bi-eye me-1"></i>View
                                 </a>
+                                @if(!$user->is_first_user && $user->id !== $authUser->id && $authUser->canManageUsers())
+                                    @if($user->is_active)
+                                    <form method="POST" action="{{ route('users.deactivate', $user) }}" class="d-inline">
+                                        @csrf
+                                        <button type="submit"
+                                            onclick="return confirm('Deactivate {{ addslashes($user->getFullName()) }}?')"
+                                            class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-person-x"></i>
+                                        </button>
+                                    </form>
+                                    @else
+                                    <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-success" title="Review pending account">
+                                        <i class="bi bi-person-check"></i>
+                                    </a>
+                                    @endif
                                 @endif
-                            @endif
+                            </div>
                         </td>
                     </tr>
                     @empty

@@ -8,6 +8,7 @@ use App\Http\Controllers\FeedbackManualController;
 use App\Http\Controllers\FeedbackReportController;
 use App\Http\Controllers\HodController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +47,9 @@ Route::get('/feedback/confirmation/{reference}', [FeedbackController::class, 'co
 // Track Feedback Routes
 Route::get('/track', [FeedbackController::class, 'trackForm'])->name('feedback.track');
 Route::post('/track', [FeedbackController::class, 'track'])->name('feedback.track.submit');
+Route::get('/system-assets/{asset}', [SystemSettingController::class, 'asset'])
+    ->whereIn('asset', ['logo', 'favicon'])
+    ->name('system-assets.show');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -55,6 +59,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/settings', [SystemSettingController::class, 'edit'])->name('settings.edit');
+    Route::put('/settings', [SystemSettingController::class, 'update'])->name('settings.update');
 
     // Feedback Admin Routes
     Route::get('/admin/feedback', [FeedbackAdminController::class, 'index'])->name('feedback.admin.index');

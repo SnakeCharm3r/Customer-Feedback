@@ -4,19 +4,19 @@
     <div class="navbar-brand-box">
         <a href="{{ route('dashboard') }}" class="logo logo-dark admin-brand-link">
             <span class="admin-brand-shell">
-                <img src="{{ asset('assets/images/ccbrt-logo.svg') }}" alt="CCBRT Logo" class="admin-brand-logo admin-brand-logo-lg">
+                <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo" class="admin-brand-logo admin-brand-logo-lg">
                 <span class="admin-brand-text sidebar-brand-copy" style="color:#065321;">
-                    <span class="admin-brand-title">CCBRT</span>
-                    <span class="admin-brand-subtitle">Feedback System</span>
+                    <span class="admin-brand-title">{{ $systemSettings?->organization_name ?? 'CCBRT' }}</span>
+                    <span class="admin-brand-subtitle">{{ $systemSettings?->portal_name ?? 'Feedback System' }}</span>
                 </span>
             </span>
          </a>
         <a href="{{ route('dashboard') }}" class="logo logo-light admin-brand-link">
             <span class="admin-brand-shell">
-                <img src="{{ asset('assets/images/ccbrt-logo.svg') }}" alt="CCBRT Logo" class="admin-brand-logo admin-brand-logo-lg">
+                <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo" class="admin-brand-logo admin-brand-logo-lg">
                 <span class="admin-brand-text text-white sidebar-brand-copy">
-                    <span class="admin-brand-title">CCBRT</span>
-                    <span class="admin-brand-subtitle">Feedback System</span>
+                    <span class="admin-brand-title">{{ $systemSettings?->organization_name ?? 'CCBRT' }}</span>
+                    <span class="admin-brand-subtitle">{{ $systemSettings?->portal_name ?? 'Feedback System' }}</span>
                 </span>
             </span>
          </a>
@@ -128,6 +128,14 @@
                         href="{{ route('departments.index') }}">
                         <i class="bi bi-buildings"></i>
                         <span>Departments</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link {{ request()->routeIs('settings.*') ? 'active' : '' }}"
+                        href="{{ route('settings.edit') }}">
+                        <i class="bi bi-gear"></i>
+                        <span>System Settings</span>
                     </a>
                 </li>
                 @endif

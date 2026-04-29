@@ -36,23 +36,22 @@
                                 <div class="alert alert-danger mb-3">
                                     <i class="bi bi-exclamation-triangle me-2"></i>{{ $referenceLookupError }}
                                 </div>
-                            @elseif ($errors->has('reference_no'))
+                            @elseif ($errors->has('lookup'))
                                 <div class="alert alert-danger mb-3">
-                                    <i class="bi bi-exclamation-triangle me-2"></i>{{ $errors->first('reference_no') }}
+                                    <i class="bi bi-exclamation-triangle me-2"></i>{{ $errors->first('lookup') }}
                                 </div>
                             @endif
 
                             <div class="mb-4">
-                                <label for="reference_no" class="form-label required">{{ __('portal.feedback_track.reference_label') }}</label>
+                                <label for="lookup" class="form-label required">{{ __('portal.feedback_track.reference_label') }}</label>
                                 <div class="input-group input-group-lg mb-3">
                                     <span class="input-group-text" style="background-color: var(--ccbrt-navy); color: white; border-color: var(--ccbrt-navy);">
-                                        <i class="bi bi-ticket-detailed"></i>
+                                        <i class="bi bi-search"></i>
                                     </span>
-                                    <input type="text" class="form-control form-control-ccbrt @error('reference_no') is-invalid @enderror" 
-                                           id="reference_no" name="reference_no" 
-                                           value="{{ old('reference_no', request('reference_no')) }}"
-                                           placeholder="{{ __('portal.feedback_track.reference_placeholder') }}" required
-                                           style="text-transform: uppercase;">
+                                    <input type="text" class="form-control form-control-ccbrt @error('lookup') is-invalid @enderror" 
+                                           id="lookup" name="lookup" 
+                                           value="{{ old('lookup', $lookup ?? request('lookup', request('reference_no'))) }}"
+                                           placeholder="{{ __('portal.feedback_track.reference_placeholder') }}" required>
                                 </div>
                                 <div class="form-text text-muted">
                                     {{ __('portal.feedback_track.reference_help') }}

@@ -41,7 +41,7 @@ class FeedbackController extends Controller
         $validated = $request->validate([
             'patient_name' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:20|required_if:is_urgent,1',
             'service_units' => 'nullable|array',
             'service_units.*' => 'in:eye,orthopaedic,physiotherapy,physician,gynaecology,ent,prosthetics_orthotics,pharmacy,pediatrics,dialysis,plastic_surgery,general_surgery,radiology,dermatology,laboratory,ogd,private_ward,general_ward,labour_ward,theatre,other',
             'feedback_type' => 'required|in:compliment,complaint,suggestion,enquiry',
@@ -61,6 +61,7 @@ class FeedbackController extends Controller
             'overall_experience.required_unless' => __('portal.validation.overall_experience_min'),
             'service_rating.required' => __('portal.validation.service_rating_required'),
             'confidentiality_comment.required_if' => __('portal.validation.confidentiality_comment_required_if'),
+            'phone.required_if' => __('portal.validation.phone_required_if_urgent'),
             'consent_given.required' => __('portal.validation.consent_required'),
             'attachment.max' => __('portal.validation.attachment_max'),
             'attachment.mimes' => __('portal.validation.attachment_mimes'),
@@ -128,21 +129,24 @@ class FeedbackController extends Controller
      */
     public function trackForm(Request $request)
     {
-        if (!$request->filled('reference_no')) {
+        $lookup = trim((string) ($request->input('lookup', $request->input('reference_no', ''))));
+
+        if ($lookup === '') {
             return view('feedback.track');
         }
 
-        $feedback = Feedback::where('reference_no', $request->reference_no)->first();
+        $feedback = $this->findFeedbackForTracking($lookup);
 
         if (!$feedback) {
             return view('feedback.track', [
                 'referenceLookupError' => __('portal.feedback_track.not_found'),
+                'lookup' => $lookup,
             ]);
         }
 
         $publicResponse = $feedback->getPublicResponse();
 
-        return view('feedback.track', compact('feedback', 'publicResponse'));
+        return view('feedback.track', compact('feedback', 'publicResponse', 'lookup'));
     }
 
     /**
@@ -151,18 +155,33 @@ class FeedbackController extends Controller
     public function track(Request $request)
     {
         $validated = $request->validate([
-            'reference_no' => 'required|string',
+            'lookup' => 'required|string',
         ]);
 
-        $feedback = Feedback::where('reference_no', $validated['reference_no'])->first();
+        $feedback = $this->findFeedbackForTracking($validated['lookup']);
 
         if (!$feedback) {
-            return back()->withErrors(['reference_no' => __('portal.feedback_track.not_found')]);
+            return back()->withInput()->withErrors(['lookup' => __('portal.feedback_track.not_found')]);
         }
 
         $publicResponse = $feedback->getPublicResponse();
 
         return view('feedback.track', compact('feedback', 'publicResponse'));
+    }
+
+    private function findFeedbackForTracking(string $lookup): ?Feedback
+    {
+        $lookup = trim($lookup);
+
+        if ($lookup === '') {
+            return null;
+        }
+
+        return Feedback::query()
+            ->where('reference_no', $lookup)
+            ->orWhere('phone', $lookup)
+            ->latest('created_at')
+            ->first();
     }
 
     private function resolveServiceCategory(array $serviceUnits): string

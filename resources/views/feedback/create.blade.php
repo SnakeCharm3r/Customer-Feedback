@@ -2,6 +2,121 @@
 
 @section('title', __('portal.meta.feedback_create_title'))
 
+<style>
+    .feedback-options-panel {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .feedback-option-card {
+        border: 1px solid #d9e6e1;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%);
+        padding: 1rem 1.1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .feedback-option-card.is-invalid {
+        border-color: #dc3545;
+        background: linear-gradient(180deg, #fff8f8 0%, #fff 100%);
+    }
+
+    .feedback-option-card--urgent.is-active {
+        border-color: #f0ad4e;
+        box-shadow: 0 0 0 4px rgba(240, 173, 78, 0.16);
+    }
+
+    .feedback-option-card--consent.is-active {
+        border-color: var(--ccbrt-teal);
+        box-shadow: 0 0 0 4px rgba(43, 125, 108, 0.14);
+    }
+
+    .feedback-option-card__toggle {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+    }
+
+    .feedback-option-card__icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.1rem;
+    }
+
+    .feedback-option-card--urgent .feedback-option-card__icon {
+        background: rgba(240, 173, 78, 0.16);
+        color: #9a6700;
+    }
+
+    .feedback-option-card--consent .feedback-option-card__icon {
+        background: rgba(43, 125, 108, 0.14);
+        color: var(--ccbrt-teal);
+    }
+
+    .feedback-option-card .form-check-input {
+        margin-top: 0.2rem;
+        flex-shrink: 0;
+    }
+
+    .feedback-option-card__body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .feedback-option-card__label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-weight: 700;
+        color: var(--ccbrt-navy);
+        margin-bottom: 0.25rem;
+        cursor: pointer;
+    }
+
+    .feedback-option-card__hint {
+        margin: 0;
+        color: #5e6b73;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .feedback-option-card__meta {
+        margin-top: 0.85rem;
+        padding-top: 0.85rem;
+        border-top: 1px solid #e5efeb;
+    }
+
+    .phone-followup-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.55rem;
+        margin-top: 0.5rem;
+        padding: 0.75rem 0.85rem;
+        border-radius: 12px;
+        background: #fff7e8;
+        color: #6b5200;
+        font-size: 0.92rem;
+        line-height: 1.45;
+    }
+
+    .phone-followup-note i {
+        margin-top: 0.1rem;
+    }
+
+    .phone-followup-note.d-none {
+        display: none !important;
+    }
+
+    .consent-error {
+        margin-top: 0.75rem;
+    }
+</style>
+
 @section('content')
 <!-- Page Header -->
 <section class="hero-section" style="padding: 3rem 0;">
@@ -93,8 +208,13 @@
                                 <div class="col-md-6 mb-3">
                                     <label for="phone" class="form-label">{{ __('portal.feedback_create.fields.phone') }} <span class="text-muted fw-normal small">({{ __('portal.common.optional') }})</span></label>
                                     <input type="tel" class="form-control form-control-ccbrt @error('phone') is-invalid @enderror" 
-                                           id="phone" name="phone" value="{{ old('phone') }}"
+                                           id="phone" name="phone" value="{{ old('phone') }}" {{ old('is_urgent') ? 'required' : '' }}
+                                           data-required-message="{{ __('portal.validation.phone_required_if_urgent') }}"
                                            placeholder="{{ __('portal.feedback_create.fields.phone_placeholder') }}">
+                                    <div id="phoneFollowupNote" class="phone-followup-note {{ old('is_urgent') ? '' : 'd-none' }}" aria-live="polite">
+                                        <i class="bi bi-telephone-forward"></i>
+                                        <span>{{ __('portal.feedback_create.fields.phone_followup_note') }}</span>
+                                    </div>
                                     @error('phone')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -107,6 +227,35 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label required fw-semibold">{{ __('portal.feedback_create.fields.feedback_type') }}</label>
+                                <div class="d-flex flex-wrap gap-3 mt-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_compliment"
+                                               value="compliment" {{ old('feedback_type') == 'compliment' ? 'checked' : '' }} required>
+                                        <label class="form-check-label" for="type_compliment">{{ __('portal.options.feedback_types.compliment') }}</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_complaint"
+                                               value="complaint" {{ old('feedback_type') == 'complaint' ? 'checked' : '' }} required>
+                                        <label class="form-check-label" for="type_complaint">{{ __('portal.options.feedback_types.complaint') }}</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_suggestion"
+                                               value="suggestion" {{ old('feedback_type') == 'suggestion' ? 'checked' : '' }} required>
+                                        <label class="form-check-label" for="type_suggestion">{{ __('portal.options.feedback_types.suggestion') }}</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_enquiry"
+                                               value="enquiry" {{ old('feedback_type') == 'enquiry' ? 'checked' : '' }} required>
+                                        <label class="form-check-label" for="type_enquiry">{{ __('portal.options.feedback_types.enquiry') }}</label>
+                                    </div>
+                                </div>
+                                @error('feedback_type')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             <div class="row mb-4">
@@ -154,36 +303,6 @@
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                                 @error('service_units.*')
-                                    <div class="text-danger small mt-1">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            {{-- TYPE OF FEEDBACK (moved here, right after Q1) --}}
-                            <div class="mb-4">
-                                <label class="form-label required fw-semibold">{{ __('portal.feedback_create.fields.feedback_type') }}</label>
-                                <div class="d-flex flex-wrap gap-3 mt-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_compliment"
-                                               value="compliment" {{ old('feedback_type') == 'compliment' ? 'checked' : '' }} required>
-                                        <label class="form-check-label" for="type_compliment">{{ __('portal.options.feedback_types.compliment') }}</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_complaint"
-                                               value="complaint" {{ old('feedback_type') == 'complaint' ? 'checked' : '' }} required>
-                                        <label class="form-check-label" for="type_complaint">{{ __('portal.options.feedback_types.complaint') }}</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_suggestion"
-                                               value="suggestion" {{ old('feedback_type') == 'suggestion' ? 'checked' : '' }} required>
-                                        <label class="form-check-label" for="type_suggestion">{{ __('portal.options.feedback_types.suggestion') }}</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="feedback_type" id="type_enquiry"
-                                               value="enquiry" {{ old('feedback_type') == 'enquiry' ? 'checked' : '' }} required>
-                                        <label class="form-check-label" for="type_enquiry">{{ __('portal.options.feedback_types.enquiry') }}</label>
-                                    </div>
-                                </div>
-                                @error('feedback_type')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -285,27 +404,48 @@
 
                             <h5 class="mb-3 mt-4" style="color: var(--ccbrt-navy); border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem;">{{ __('portal.feedback_create.sections.additional_options') }}</h5>
 
-                            <div class="mb-4">
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" id="is_urgent" name="is_urgent" value="1" {{ old('is_urgent') ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="is_urgent">
-                                        <strong>{{ __('portal.feedback_create.fields.urgent') }}</strong> - {{ __('portal.feedback_create.fields.urgent_help') }}
-                                    </label>
-                                </div>
-                            </div>
+                            <div class="feedback-options-panel mb-4">
+                                <div id="urgentOptionCard" class="feedback-option-card feedback-option-card--urgent {{ old('is_urgent') ? 'is-active' : '' }}">
+                                    <div class="feedback-option-card__toggle">
+                                        <input class="form-check-input" type="checkbox" id="is_urgent" name="is_urgent" value="1" {{ old('is_urgent') ? 'checked' : '' }}>
+                                        <span class="feedback-option-card__icon" aria-hidden="true">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                        </span>
+                                        <div class="feedback-option-card__body">
+                                            <label class="feedback-option-card__label" for="is_urgent">
+                                                {{ __('portal.feedback_create.fields.urgent') }}
+                                            </label>
+                                            <p class="feedback-option-card__hint">{{ __('portal.feedback_create.fields.urgent_help') }}</p>
 
-                            <div class="mb-4">
-                                <div class="form-check">
-                                    <input class="form-check-input @error('consent_given') is-invalid @enderror" type="checkbox" 
-                                           id="consent_given" name="consent_given" value="1" {{ old('consent_given') ? 'checked' : '' }} required>
-                                    <label class="form-check-label" for="consent_given">
-                                        {{ __('portal.feedback_create.fields.consent') }} 
-                                        <span class="text-danger">*</span>
-                                    </label>
+                                            <div class="feedback-option-card__meta">
+                                                <div id="urgentPhoneAlert" class="alert alert-warning py-2 px-3 mb-0 {{ old('is_urgent') ? '' : 'd-none' }}" role="alert">
+                                                    {{ __('portal.feedback_create.fields.urgent_phone_alert') }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                @error('consent_given')
-                                    <div class="text-danger small mt-1">{{ $message }}</div>
-                                @enderror
+
+                                <div id="consentOptionCard" class="feedback-option-card feedback-option-card--consent {{ old('consent_given') ? 'is-active' : '' }} @error('consent_given') is-invalid @enderror">
+                                    <div class="feedback-option-card__toggle">
+                                        <input class="form-check-input @error('consent_given') is-invalid @enderror" type="checkbox"
+                                               id="consent_given" name="consent_given" value="1" {{ old('consent_given') ? 'checked' : '' }} required>
+                                        <span class="feedback-option-card__icon" aria-hidden="true">
+                                            <i class="bi bi-shield-check"></i>
+                                        </span>
+                                        <div class="feedback-option-card__body">
+                                            <label class="feedback-option-card__label" for="consent_given">
+                                                {{ __('portal.feedback_create.fields.consent') }}
+                                                <span class="text-danger">*</span>
+                                            </label>
+                                            <p class="feedback-option-card__hint">{{ __('portal.feedback_create.fields.consent_help') }}</p>
+
+                                            @error('consent_given')
+                                                <div class="text-danger small consent-error">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Submit Button -->
@@ -350,6 +490,12 @@
     // --- Show / hide complaint-specific fields based on feedback type ---
     const nonComplimentBlock = document.getElementById('non-compliment-fields');
     const feedbackTypeRadios = document.querySelectorAll('input[name="feedback_type"]');
+    const urgentCheckbox = document.getElementById('is_urgent');
+    const phoneField = document.getElementById('phone');
+    const consentCheckbox = document.getElementById('consent_given');
+    const urgentOptionCard = document.getElementById('urgentOptionCard');
+    const consentOptionCard = document.getElementById('consentOptionCard');
+    const phoneFollowupNote = document.getElementById('phoneFollowupNote');
 
     function applyFeedbackTypeVisibility(type) {
         const isCompliment = (type === 'compliment');
@@ -368,6 +514,69 @@
             applyFeedbackTypeVisibility(this.value);
         });
     });
+
+    function syncUrgentPhoneRequirement() {
+        if (!urgentCheckbox || !phoneField) return;
+
+        const phoneRequiredMessage = phoneField.dataset.requiredMessage || '';
+
+        phoneField.required = urgentCheckbox.checked;
+
+        const urgentPhoneAlert = document.getElementById('urgentPhoneAlert');
+
+        if (urgentPhoneAlert) {
+            urgentPhoneAlert.classList.toggle('d-none', !urgentCheckbox.checked);
+        }
+
+        if (urgentOptionCard) {
+            urgentOptionCard.classList.toggle('is-active', urgentCheckbox.checked);
+        }
+
+        if (phoneFollowupNote) {
+            phoneFollowupNote.classList.toggle('d-none', !urgentCheckbox.checked);
+        }
+
+        if (!urgentCheckbox.checked) {
+            phoneField.setCustomValidity('');
+            phoneField.classList.remove('is-invalid');
+            return;
+        }
+
+        if (!phoneField.value.trim()) {
+            phoneField.setCustomValidity(phoneRequiredMessage);
+            phoneField.focus();
+            return;
+        }
+
+        phoneField.setCustomValidity('');
+    }
+
+    if (urgentCheckbox && phoneField) {
+        urgentCheckbox.addEventListener('change', syncUrgentPhoneRequirement);
+        phoneField.addEventListener('input', function() {
+            if (!urgentCheckbox.checked) {
+                phoneField.setCustomValidity('');
+                return;
+            }
+
+            phoneField.setCustomValidity(this.value.trim() ? '' : (this.dataset.requiredMessage || ''));
+        });
+        phoneField.addEventListener('invalid', function() {
+            if (urgentCheckbox.checked && !this.value.trim()) {
+                this.setCustomValidity(this.dataset.requiredMessage || '');
+            }
+        });
+        syncUrgentPhoneRequirement();
+    }
+
+    if (consentCheckbox && consentOptionCard) {
+        const syncConsentCardState = function() {
+            consentOptionCard.classList.toggle('is-active', consentCheckbox.checked);
+        };
+
+        consentCheckbox.addEventListener('change', syncConsentCardState);
+        syncConsentCardState();
+    }
 
     // Set correct initial state on page load (handles old() values after validation)
     (function() {

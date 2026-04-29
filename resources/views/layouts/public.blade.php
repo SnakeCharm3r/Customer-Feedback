@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="{{ __('portal.meta.description') }}">
     <title>@yield('title', __('portal.meta.default_title'))</title>
+    <link rel="shortcut icon" href="{{ $systemSettings?->faviconUrl() ?? asset('assets/images/favicon.ico') }}">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -534,10 +535,10 @@
     <nav class="navbar navbar-expand-lg navbar-ccbrt">
         <div class="container">
             <a class="navbar-brand" href="{{ url('/') }}">
-                <img src="{{ asset('assets/images/ccbrt-logo.svg') }}" alt="CCBRT Logo" class="public-brand-logo">
+                <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? __('portal.brand.hospital') }} Logo" class="public-brand-logo">
                 <span class="public-brand-text">
-                    <span class="public-brand-name">{{ __('portal.brand.hospital') }}</span>
-                    <span class="public-brand-subtitle">{{ __('portal.brand.portal') }}</span>
+                    <span class="public-brand-name">{{ $systemSettings?->organization_name ?? __('portal.brand.hospital') }}</span>
+                    <span class="public-brand-subtitle">{{ $systemSettings?->portal_name ?? __('portal.brand.portal') }}</span>
                 </span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -580,29 +581,33 @@
             <div class="row">
                 <div class="col-md-4 mb-3">
                     <div class="footer-brand mb-3">
-                        <img src="{{ asset('assets/images/ccbrt-logo.svg') }}" alt="CCBRT Logo" class="public-brand-logo">
+                        <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? __('portal.brand.hospital') }} Logo" class="public-brand-logo">
                         <div>
-                            <h5 class="footer-brand-title">{{ __('portal.brand.hospital') }}</h5>
-                            <p class="mb-0">{{ __('portal.brand.about') }}</p>
+                            <h5 class="footer-brand-title">{{ $systemSettings?->organization_name ?? __('portal.brand.hospital') }}</h5>
+                            <p class="mb-0">{{ $systemSettings?->footerAboutText() ?? __('portal.brand.about') }}</p>
                         </div>
                     </div>
-                    <p class="mb-0"><i class="bi bi-geo-alt me-2"></i>{{ __('portal.footer.location') }}</p>
+                    <p class="mb-0"><i class="bi bi-geo-alt me-2"></i>{{ $systemSettings?->footerLocationText() ?? __('portal.footer.location') }}</p>
                 </div>
                 <div class="col-md-4 mb-3">
                     <h5 class="mb-3">{{ __('portal.footer.contact_us') }}</h5>
-                    <p class="mb-2"><i class="bi bi-telephone me-2"></i>+255 22 277 5000</p>
-                    <p class="mb-2"><i class="bi bi-envelope me-2"></i>feedback@ccbrt.org</p>
-                    <p class="mb-0"><i class="bi bi-clock me-2"></i>{{ __('portal.footer.hours') }}</p>
+                    <p class="mb-2"><i class="bi bi-telephone me-2"></i>{{ $systemSettings?->contact_phone ?: '+255 22 277 5000' }}</p>
+                    <p class="mb-2"><i class="bi bi-envelope me-2"></i>{{ $systemSettings?->contact_email ?: 'feedback@ccbrt.org' }}</p>
+                    <p class="mb-0"><i class="bi bi-clock me-2"></i>{{ $systemSettings?->footerHoursText() ?? __('portal.footer.hours') }}</p>
                 </div>
                 <div class="col-md-4 mb-3">
                     <h5 class="mb-3">{{ __('portal.footer.privacy_terms') }}</h5>
-                    <p class="mb-2">{{ __('portal.footer.privacy_copy') }}</p>
-                    <p class="mb-0"><a href="#">{{ __('portal.footer.privacy_policy') }}</a> | <a href="#">{{ __('portal.footer.terms_of_use') }}</a></p>
+                    <p class="mb-2">{{ $systemSettings?->footerPrivacyText() ?? __('portal.footer.privacy_copy') }}</p>
+                    <p class="mb-0">
+                        <a href="{{ $systemSettings?->privacyPolicyUrl() ?: '#' }}">{{ __('portal.footer.privacy_policy') }}</a>
+                        |
+                        <a href="{{ $systemSettings?->termsOfUseUrl() ?: '#' }}">{{ __('portal.footer.terms_of_use') }}</a>
+                    </p>
                 </div>
             </div>
             <hr class="my-4" style="border-color: rgba(255,255,255,0.2);">
             <div class="text-center">
-                <p class="mb-0">&copy; {{ date('Y') }} {{ __('portal.brand.hospital') }}. {{ __('portal.footer.rights_reserved') }}</p>
+                <p class="mb-0">&copy; {{ date('Y') }} {{ $systemSettings?->organization_name ?? __('portal.brand.hospital') }}. {{ __('portal.footer.rights_reserved') }}</p>
             </div>
         </div>
     </footer>

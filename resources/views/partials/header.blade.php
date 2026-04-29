@@ -38,19 +38,19 @@
                 <div class="navbar-brand-box horizontal-logo">
                     <a href="{{ route('dashboard') }}" class="logo logo-dark admin-brand-link">
                         <span class="admin-brand-shell">
-                            <img src="{{ asset('assets/images/ccbrt-logo.svg') }}" alt="CCBRT Logo" class="admin-brand-logo">
+                            <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo" class="admin-brand-logo">
                             <span class="admin-brand-text text-primary">
-                                <span class="admin-brand-title">CCBRT</span>
-                                <span class="admin-brand-subtitle">Feedback System</span>
+                                <span class="admin-brand-title">{{ $systemSettings?->organization_name ?? 'CCBRT' }}</span>
+                                <span class="admin-brand-subtitle">{{ $systemSettings?->portal_name ?? 'Feedback System' }}</span>
                             </span>
                         </span>
                     </a>
                     <a href="{{ route('dashboard') }}" class="logo logo-light admin-brand-link">
                         <span class="admin-brand-shell">
-                            <img src="{{ asset('assets/images/ccbrt-logo.svg') }}" alt="CCBRT Logo" class="admin-brand-logo">
+                            <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo" class="admin-brand-logo">
                             <span class="admin-brand-text text-white">
-                                <span class="admin-brand-title">CCBRT</span>
-                                <span class="admin-brand-subtitle">Feedback System</span>
+                                <span class="admin-brand-title">{{ $systemSettings?->organization_name ?? 'CCBRT' }}</span>
+                                <span class="admin-brand-subtitle">{{ $systemSettings?->portal_name ?? 'Feedback System' }}</span>
                             </span>
                         </span>
                     </a>
