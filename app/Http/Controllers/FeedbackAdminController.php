@@ -34,6 +34,40 @@ class FeedbackAdminController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('type')) {
+            $query->where('feedback_type', $request->type);
+        }
+
+        if ($request->filled('priority')) {
+            $query->where('is_urgent', true);
+        }
+
+        if ($request->filled('assigned_to')) {
+            if ($request->assigned_to === 'unassigned') {
+                $query->whereNull('assigned_to');
+            } else {
+                $query->where('assigned_to', $request->assigned_to);
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('reference_no', 'like', "%{$search}%")
+                  ->orWhere('patient_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
         $feedbacks = $query->paginate(20)->withQueryString();
 
         $counts = [
@@ -41,9 +75,15 @@ class FeedbackAdminController extends Controller
             'under_review' => Feedback::where('status', 'under_review')->count(),
             'responded'    => Feedback::where('status', 'responded')->count(),
             'closed'       => Feedback::where('status', 'closed')->count(),
+            'total'        => Feedback::count(),
         ];
 
-        return view('feedback.admin.index', compact('feedbacks', 'counts'));
+        $assignableUsers = User::where('is_active', true)
+            ->whereIn('role', User::FEEDBACK_MANAGEMENT_ROLES)
+            ->orderBy('fname')->orderBy('lname')
+            ->get();
+
+        return view('feedback.admin.index', compact('feedbacks', 'counts', 'assignableUsers'));
     }
 
     /**

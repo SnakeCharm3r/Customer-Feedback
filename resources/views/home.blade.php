@@ -8,16 +8,16 @@
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-8">
-                <h1 class="hero-title">{{ __('portal.home.hero_title') }}</h1>
+                <h1 class="hero-title">{{ $systemSettings?->homeHeroTitle() ?? __('portal.home.hero_title') }}</h1>
                 <p class="hero-subtitle">
-                    {{ __('portal.home.hero_subtitle') }}
+                    {{ $systemSettings?->homeHeroSubtitle() ?? __('portal.home.hero_subtitle') }}
                 </p>
                 <div class="d-flex flex-wrap gap-3">
                     <a href="{{ route('feedback.create') }}" class="btn btn-ccbrt-primary btn-lg">
-                        <i class="bi bi-chat-square-text me-2"></i>{{ __('portal.home.primary_cta') }}
+                        <i class="bi bi-chat-square-text me-2"></i>{{ $systemSettings?->homePrimaryCtaLabel() ?? __('portal.home.primary_cta') }}
                     </a>
                     <a href="{{ route('feedback.track') }}" class="btn btn-ccbrt-outline btn-lg">
-                        <i class="bi bi-search me-2"></i>{{ __('portal.home.secondary_cta') }}
+                        <i class="bi bi-search me-2"></i>{{ $systemSettings?->homeSecondaryCtaLabel() ?? __('portal.home.secondary_cta') }}
                     </a>
                 </div>
             </div>

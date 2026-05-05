@@ -6,6 +6,7 @@ use App\Models\Department;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DepartmentController extends Controller
@@ -39,7 +40,7 @@ class DepartmentController extends Controller
         abort_unless(Auth::user()?->isAdmin(), 403);
 
         $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:150'],
+            'name'         => ['required', 'string', 'max:150', Rule::unique('departments', 'name')],
             'categories'   => ['nullable', 'array'],
             'categories.*' => ['in:opd,ipd,theatre,other'],
             'hod_id'       => ['nullable', 'integer', 'exists:hods,id'],
@@ -70,7 +71,7 @@ class DepartmentController extends Controller
         abort_unless(Auth::user()?->isAdmin(), 403);
 
         $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:150'],
+            'name'         => ['required', 'string', 'max:150', Rule::unique('departments', 'name')->ignore($department->id)],
             'categories'   => ['nullable', 'array'],
             'categories.*' => ['in:opd,ipd,theatre,other'],
             'hod_id'       => ['nullable', 'integer', 'exists:hods,id'],

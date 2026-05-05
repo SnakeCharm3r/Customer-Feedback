@@ -25,7 +25,7 @@
 <div class="row g-4">
 
     {{-- LEFT: Submission Details --}}
-    <div class="col-xl-8">
+    <div class="col-xl-8 col-lg-7">
 
         @if(session('status'))
             <div class="alert alert-success alert-dismissible fade show">
@@ -322,7 +322,7 @@
     </div>
 
     {{-- RIGHT: Actions Panel --}}
-    <div class="col-xl-4">
+    <div class="col-xl-4 col-lg-5">
         <div class="card sticky-top feedback-detail-sticky-card">
             <div class="card-header">
                 <h6 class="card-title mb-0"><i class="bi bi-gear me-2"></i>Actions</h6>
