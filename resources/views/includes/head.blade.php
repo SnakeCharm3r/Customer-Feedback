@@ -301,8 +301,8 @@
             .admin-brand-title { font-size: 1.15rem; }
             .admin-brand-logo-lg { width: 62px; height: 62px; }
 
-            /* Page content padding */
-            .page-content { padding: 1.75rem 1.75rem 80px 1.75rem; }
+            /* Page content padding - maintain top padding for fixed topbar */
+            .page-content { padding: calc(72px + 1.75rem) 1.75rem 80px 1.75rem; }
 
             /* Page title */
             .page-title-box h4 { font-size: 1.35rem; }
@@ -355,6 +355,8 @@
             .app-menu.navbar-menu { width: 300px !important; }
             .main-content { margin-left: 300px !important; }
             .container-fluid { max-width: 2100px; }
+            /* Larger topbar requires more top padding */
+            .page-content { padding: calc(76px + 1.75rem) 1.75rem 80px 1.75rem; }
         }
 
         /* ── Responsive overrides ── */
