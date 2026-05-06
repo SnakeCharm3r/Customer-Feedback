@@ -416,6 +416,7 @@
             .feedback-detail-sticky-card {
                 position: static !important;
             }
+        }
     </style>
 
     <!-- jsvectormap css -->
