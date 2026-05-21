@@ -30,7 +30,9 @@ class FeedbackController extends Controller
      */
     public function create()
     {
-        return view('feedback.create');
+        return view('feedback.create', [
+            'locationServiceMap' => \App\Models\FeedbackLocation::withServiceItemsMap(),
+        ]);
     }
 
     /**
@@ -43,13 +45,22 @@ class FeedbackController extends Controller
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20|required_if:is_urgent,1',
             'service_units' => 'nullable|array',
-            'service_units.*' => 'in:eye,orthopaedic,physiotherapy,physician,gynaecology,ent,prosthetics_orthotics,pharmacy,pediatrics,dialysis,plastic_surgery,general_surgery,radiology,dermatology,laboratory,ogd,private_ward,general_ward,labour_ward,theatre,other',
+            'service_units.*' => [
+                'string',
+                function ($attribute, $value, $fail) {
+                    $standard = array_merge(self::OPD_UNITS, self::IPD_UNITS, self::THEATRE_UNITS, ['other']);
+                    $custom   = \App\Models\LocationServiceItem::active()->pluck('key')->toArray();
+                    if (! in_array($value, array_merge($standard, $custom))) {
+                        $fail('The selected service unit is invalid.');
+                    }
+                },
+            ],
             'feedback_type' => 'required|in:compliment,complaint,suggestion,enquiry',
             'service_rating' => 'required|in:poor,average,good,excellent',
             'confidentiality_respected' => 'nullable|in:1,0',
             'confidentiality_comment' => 'nullable|string|max:1000|required_if:confidentiality_respected,0',
             'visit_date' => 'nullable|date',
-            'location' => 'nullable|in:' . implode(',', array_keys(\App\Models\Feedback::LOCATIONS)),
+            'location' => 'nullable|in:' . implode(',', array_keys(\App\Models\Feedback::getLocations(false))),
             'overall_experience' => 'required_unless:feedback_type,compliment|nullable|string|min:10',
             'improvement_suggestion' => 'nullable|string|max:2000',
             'message' => 'nullable|string|max:2000',

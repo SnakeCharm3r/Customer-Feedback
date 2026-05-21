@@ -62,6 +62,15 @@ class Feedback extends Model
         'tegeta' => 'CCBRT Tegeta Branch',
     ];
 
+    public static function getLocations(bool $activeOnly = true): array
+    {
+        try {
+            return \App\Models\FeedbackLocation::toSelectArray($activeOnly);
+        } catch (\Throwable $e) {
+            return static::LOCATIONS;
+        }
+    }
+
     const SERVICE_UNITS_OPD = [
         'eye'                  => 'Eye',
         'orthopaedic'          => 'Orthopaedic',

@@ -32,7 +32,8 @@ class SystemSettingController extends Controller
         $this->authorizeAccess();
 
         return view('settings.edit', [
-            'settings' => SystemSetting::current(),
+            'settings'  => SystemSetting::current(),
+            'locations' => \App\Models\FeedbackLocation::allOrdered(),
         ]);
     }
 

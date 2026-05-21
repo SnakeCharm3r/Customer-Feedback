@@ -110,6 +110,25 @@
         </div>
     @endif
 
+    @if (session('location_status'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-geo-alt me-2"></i>{{ session('location_status') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if ($errors->hasBag('location_errors'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <ul class="mb-0 mt-1">
+                @foreach ($errors->getBag('location_errors')->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
@@ -126,6 +145,7 @@
                                 <a href="#section-footer" class="settings-nav-link"><i class="bi bi-layout-text-window-reverse"></i><span>Footer Content</span></a>
                                 <a href="#section-contact" class="settings-nav-link"><i class="bi bi-envelope-paper"></i><span>Contact and Email</span></a>
                                 <a href="#section-security" class="settings-nav-link"><i class="bi bi-shield-lock"></i><span>Security</span></a>
+                                <a href="#section-locations" class="settings-nav-link"><i class="bi bi-geo-alt"></i><span>Feedback Locations</span></a>
                             </div>
                             <div class="d-grid mt-4">
                                 <button type="submit" class="btn btn-primary btn-lg">
@@ -361,5 +381,414 @@
             </div>
         </div>
     </form>
+
+    {{-- ═══ Locations section (outside settings form — uses its own forms) ═══ --}}
+    <div class="row g-4 mt-1">
+        <div class="col-xl-9 offset-xl-3">
+            <div id="section-locations" class="card settings-section">
+                <div class="card-header bg-white border-0 pb-0 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                        <h5 class="mb-1"><i class="bi bi-geo-alt me-2 text-success"></i>Feedback Locations</h5>
+                        <p class="text-muted small mb-0">Manage the branch locations shown on the public feedback form. Toggle active/inactive to hide a branch without deleting it.</p>
+                    </div>
+                    <button class="btn btn-sm btn-success" type="button" data-bs-toggle="modal" data-bs-target="#addLocationModal">
+                        <i class="bi bi-plus-lg me-1"></i>Add Location
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    @if($locations->isEmpty())
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-geo-alt fs-2 d-block mb-2"></i>No locations defined yet.
+                        </div>
+                    @else
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:80px">Order</th>
+                                    <th>Key</th>
+                                    <th>Label</th>
+                                    <th style="width:110px">Status</th>
+                                    <th style="width:130px" class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($locations as $loc)
+                                @php $locItems = $loc->serviceItems()->ordered()->get(); @endphp
+                                {{-- Main location row --}}
+                                <tr>
+                                    <td class="text-muted small">{{ $loc->sort_order }}</td>
+                                    <td><code class="small">{{ $loc->key }}</code></td>
+                                    <td>
+                                        <span class="fw-semibold">{{ $loc->label }}</span>
+                                        @if($locItems->isNotEmpty())
+                                            <span class="badge bg-info-subtle text-info ms-2 small">{{ $locItems->count() }} services</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="{{ route('locations.toggle', $loc) }}" class="d-inline">
+                                            @csrf @method('PATCH')
+                                            <button type="submit" class="badge border-0 {{ $loc->is_active ? 'bg-success' : 'bg-secondary' }}" title="Click to toggle">
+                                                {{ $loc->is_active ? 'Active' : 'Inactive' }}
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-success me-1"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#items-{{ $loc->id }}"
+                                                title="Manage services for this location">
+                                            <i class="bi bi-list-ul"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary me-1"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editLocationModal"
+                                                data-id="{{ $loc->id }}"
+                                                data-key="{{ $loc->key }}"
+                                                data-label="{{ $loc->label }}"
+                                                data-sort="{{ $loc->sort_order }}"
+                                                data-active="{{ $loc->is_active ? '1' : '0' }}"
+                                                title="Edit location">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteLocationModal"
+                                                data-id="{{ $loc->id }}"
+                                                data-label="{{ $loc->label }}"
+                                                title="Delete location">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {{-- Collapsible service items sub-panel --}}
+                                <tr class="p-0" id="items-{{ $loc->id }}-row">
+                                    <td colspan="5" class="p-0 border-0">
+                                        <div class="collapse" id="items-{{ $loc->id }}">
+                                            <div class="bg-light border-top border-bottom px-4 py-3">
+                                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                                    <span class="fw-semibold small text-success"><i class="bi bi-grid me-1"></i>Service / Product Items for <em>{{ $loc->label }}</em></span>
+                                                    <button class="btn btn-sm btn-success"
+                                                            type="button"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#addItemModal"
+                                                            data-loc-id="{{ $loc->id }}"
+                                                            data-loc-label="{{ $loc->label }}">
+                                                        <i class="bi bi-plus-lg me-1"></i>Add Item
+                                                    </button>
+                                                </div>
+                                                @if($locItems->isEmpty())
+                                                    <p class="text-muted small mb-0 fst-italic">No custom service items yet. Click "Add Item" to create the first one. Without items, this location will show the standard hospital service groups on the feedback form.</p>
+                                                @else
+                                                @php $grouped = $locItems->groupBy('group_label'); @endphp
+                                                @foreach($grouped as $groupName => $groupItems)
+                                                    <div class="mb-2">
+                                                        <div class="text-muted small fw-semibold mb-1">{{ $groupName ?? 'General' }}</div>
+                                                        <div class="d-flex flex-wrap gap-2">
+                                                            @foreach($groupItems as $sItem)
+                                                            <span class="badge {{ $sItem->is_active ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border' }} d-inline-flex align-items-center gap-1 px-2 py-1">
+                                                                {{ $sItem->label }}
+                                                                <button type="button"
+                                                                        class="btn-close btn-close-sm ms-1"
+                                                                        style="font-size:0.55rem;"
+                                                                        data-bs-toggle="modal"
+                                                                        data-bs-target="#deleteItemModal"
+                                                                        data-loc-id="{{ $loc->id }}"
+                                                                        data-item-id="{{ $sItem->id }}"
+                                                                        data-item-label="{{ $sItem->label }}"
+                                                                        data-item-action="{{ route('locations.items.destroy', [$loc, $sItem]) }}"
+                                                                        title="Remove {{ $sItem->label }}"></button>
+                                                                <button type="button"
+                                                                        class="border-0 bg-transparent p-0 ms-0"
+                                                                        data-bs-toggle="modal"
+                                                                        data-bs-target="#editItemModal"
+                                                                        data-loc-id="{{ $loc->id }}"
+                                                                        data-item-id="{{ $sItem->id }}"
+                                                                        data-item-key="{{ $sItem->key }}"
+                                                                        data-item-label="{{ $sItem->label }}"
+                                                                        data-item-group="{{ $sItem->group_label }}"
+                                                                        data-item-sort="{{ $sItem->sort_order }}"
+                                                                        data-item-active="{{ $sItem->is_active ? '1' : '0' }}"
+                                                                        data-item-action="{{ route('locations.items.update', [$loc, $sItem]) }}"
+                                                                        title="Edit {{ $sItem->label }}">
+                                                                    <i class="bi bi-pencil" style="font-size:0.6rem;color:inherit;opacity:0.7;"></i>
+                                                                </button>
+                                                            </span>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Add Location Modal --}}
+    <div class="modal fade" id="addLocationModal" tabindex="-1" aria-labelledby="addLocationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" action="{{ route('locations.store') }}">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addLocationModalLabel"><i class="bi bi-geo-alt me-2"></i>Add Location</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Key <span class="text-danger">*</span></label>
+                            <input type="text" name="key" class="form-control @error('key') is-invalid @enderror"
+                                   placeholder="e.g. mwanza" pattern="[a-zA-Z0-9_\-]+" required
+                                   value="{{ old('key') }}">
+                            <div class="form-text">Lowercase slug (letters, numbers, underscores, hyphens). Must be unique.</div>
+                            @error('key')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Display Label <span class="text-danger">*</span></label>
+                            <input type="text" name="label" class="form-control @error('label') is-invalid @enderror"
+                                   placeholder="e.g. CCBRT Mwanza Branch" required
+                                   value="{{ old('label') }}">
+                            @error('label')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Sort Order</label>
+                            <input type="number" name="sort_order" class="form-control" min="0" max="9999" value="{{ old('sort_order', 0) }}">
+                            <div class="form-text">Lower numbers appear first.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success"><i class="bi bi-plus-lg me-1"></i>Add Location</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Edit Location Modal --}}
+    <div class="modal fade" id="editLocationModal" tabindex="-1" aria-labelledby="editLocationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" id="editLocationForm" action="">
+                @csrf @method('PUT')
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editLocationModalLabel"><i class="bi bi-pencil me-2"></i>Edit Location</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Key <span class="text-danger">*</span></label>
+                            <input type="text" name="key" id="editLocationKey" class="form-control" required pattern="[a-zA-Z0-9_\-]+">
+                            <div class="form-text">Changing the key may affect existing feedback records linked to this location.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Display Label <span class="text-danger">*</span></label>
+                            <input type="text" name="label" id="editLocationLabel" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Sort Order</label>
+                            <input type="number" name="sort_order" id="editLocationSort" class="form-control" min="0" max="9999">
+                        </div>
+                        <div class="mb-0">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="editLocationActive" value="1">
+                                <label class="form-check-label" for="editLocationActive">Active (visible on feedback form)</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Save Changes</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Delete Location Modal --}}
+    <div class="modal fade" id="deleteLocationModal" tabindex="-1" aria-labelledby="deleteLocationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <form method="POST" id="deleteLocationForm" action="">
+                @csrf @method('DELETE')
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteLocationModalLabel"><i class="bi bi-trash me-2 text-danger"></i>Delete Location</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0">Delete <strong id="deleteLocationLabel"></strong>? This cannot be undone. Existing feedback records referencing this location key will retain the key value.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Add Service Item Modal --}}
+    <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" id="addItemForm" action="">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addItemModalLabel"><i class="bi bi-plus-circle me-2 text-success"></i>Add Service Item</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3">Adding items to: <strong id="addItemLocLabel"></strong></p>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Key <span class="text-danger">*</span></label>
+                            <input type="text" name="key" class="form-control" placeholder="e.g. tote_bags" pattern="[a-zA-Z0-9_\-]+" required>
+                            <div class="form-text">Unique slug within this location (letters, numbers, underscores, hyphens).</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Display Label <span class="text-danger">*</span></label>
+                            <input type="text" name="label" class="form-control" placeholder="e.g. Tote Bags" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Group / Category</label>
+                            <input type="text" name="group_label" class="form-control" placeholder="e.g. Bags & Accessories">
+                            <div class="form-text">Items in the same group are shown together on the feedback form.</div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold">Sort Order</label>
+                            <input type="number" name="sort_order" class="form-control" min="0" max="9999" value="0">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success"><i class="bi bi-plus-lg me-1"></i>Add Item</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Edit Service Item Modal --}}
+    <div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" id="editItemForm" action="">
+                @csrf @method('PUT')
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editItemModalLabel"><i class="bi bi-pencil me-2"></i>Edit Service Item</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Key <span class="text-danger">*</span></label>
+                            <input type="text" name="key" id="editItemKey" class="form-control" required pattern="[a-zA-Z0-9_\-]+">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Display Label <span class="text-danger">*</span></label>
+                            <input type="text" name="label" id="editItemLabel" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Group / Category</label>
+                            <input type="text" name="group_label" id="editItemGroup" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Sort Order</label>
+                            <input type="number" name="sort_order" id="editItemSort" class="form-control" min="0" max="9999">
+                        </div>
+                        <div class="mb-0">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="editItemActive" value="1">
+                                <label class="form-check-label" for="editItemActive">Active (visible on feedback form)</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Save Changes</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Delete Service Item Modal --}}
+    <div class="modal fade" id="deleteItemModal" tabindex="-1" aria-labelledby="deleteItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <form method="POST" id="deleteItemForm" action="">
+                @csrf @method('DELETE')
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteItemModalLabel"><i class="bi bi-trash me-2 text-danger"></i>Remove Item</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0">Remove <strong id="deleteItemLabel"></strong>? This cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash me-1"></i>Remove</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Populate Edit Location modal
+    document.getElementById('editLocationModal').addEventListener('show.bs.modal', function (e) {
+        const btn  = e.relatedTarget;
+        const id   = btn.dataset.id;
+        document.getElementById('editLocationForm').action = '/settings/locations/' + id;
+        document.getElementById('editLocationKey').value   = btn.dataset.key;
+        document.getElementById('editLocationLabel').value = btn.dataset.label;
+        document.getElementById('editLocationSort').value  = btn.dataset.sort;
+        document.getElementById('editLocationActive').checked = btn.dataset.active === '1';
+    });
+
+    // Populate Delete Location modal
+    document.getElementById('deleteLocationModal').addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget;
+        document.getElementById('deleteLocationForm').action  = '/settings/locations/' + btn.dataset.id;
+        document.getElementById('deleteLocationLabel').textContent = btn.dataset.label;
+    });
+
+    // Populate Add Item modal
+    document.getElementById('addItemModal').addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget;
+        document.getElementById('addItemForm').action   = '/settings/locations/' + btn.dataset.locId + '/items';
+        document.getElementById('addItemLocLabel').textContent = btn.dataset.locLabel;
+        document.getElementById('addItemForm').reset();
+    });
+
+    // Populate Edit Item modal
+    document.getElementById('editItemModal').addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget;
+        document.getElementById('editItemForm').action      = btn.dataset.itemAction;
+        document.getElementById('editItemKey').value        = btn.dataset.itemKey;
+        document.getElementById('editItemLabel').value      = btn.dataset.itemLabel;
+        document.getElementById('editItemGroup').value      = btn.dataset.itemGroup ?? '';
+        document.getElementById('editItemSort').value       = btn.dataset.itemSort;
+        document.getElementById('editItemActive').checked   = btn.dataset.itemActive === '1';
+    });
+
+    // Populate Delete Item modal
+    document.getElementById('deleteItemModal').addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget;
+        document.getElementById('deleteItemForm').action         = btn.dataset.itemAction;
+        document.getElementById('deleteItemLabel').textContent   = btn.dataset.itemLabel;
+    });
+</script>
+@endpush

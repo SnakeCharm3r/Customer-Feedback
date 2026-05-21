@@ -7,6 +7,7 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\FeedbackManualController;
 use App\Http\Controllers\FeedbackReportController;
 use App\Http\Controllers\HodController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\UserManagementController;
@@ -61,6 +62,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/settings', [SystemSettingController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SystemSettingController::class, 'update'])->name('settings.update');
+
+    // Location Management (Admin only)
+    Route::post('/settings/locations', [LocationController::class, 'store'])->name('locations.store');
+    Route::put('/settings/locations/{location}', [LocationController::class, 'update'])->name('locations.update');
+    Route::delete('/settings/locations/{location}', [LocationController::class, 'destroy'])->name('locations.destroy');
+    Route::patch('/settings/locations/{location}/toggle', [LocationController::class, 'toggleActive'])->name('locations.toggle');
+
+    // Location Service Items (Admin only)
+    Route::post('/settings/locations/{location}/items', [LocationController::class, 'storeItem'])->name('locations.items.store');
+    Route::put('/settings/locations/{location}/items/{item}', [LocationController::class, 'updateItem'])->name('locations.items.update');
+    Route::delete('/settings/locations/{location}/items/{item}', [LocationController::class, 'destroyItem'])->name('locations.items.destroy');
 
     // Feedback Admin Routes
     Route::get('/admin/feedback', [FeedbackAdminController::class, 'index'])->name('feedback.admin.index');
