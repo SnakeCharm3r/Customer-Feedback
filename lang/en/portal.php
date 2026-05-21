@@ -191,7 +191,7 @@ return [
             'ipd'     => 'Inpatient Services',
             'theatre' => 'Theatre Services',
         ],
-        'submit_button'     => 'Submit Feedback',
+        'submit_button'     => 'Submit',
         'submitting_button' => 'Submitting...',
     ],
     'feedback_track' => [
@@ -235,7 +235,7 @@ return [
         'summary_title' => 'Submission Summary',
         'next_steps_title' => 'What Happens Next?',
         'review_title' => '1. Review',
-        'review_description' => 'Our QA team will review your feedback within 2-3 business days.',
+        'review_description' => 'Our QA team will review your feedback during business hours, typically within 1–5 working days.',
         'investigation_title' => '2. Investigation',
         'investigation_description' => 'We may investigate the matter with relevant departments.',
         'response_title' => '3. Response',
