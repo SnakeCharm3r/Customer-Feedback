@@ -183,7 +183,7 @@ class FeedbackReportController extends Controller
         return response()->streamDownload(function () use ($feedbacks): void {
             $h = fopen('php://output', 'w');
             fprintf($h, chr(0xEF) . chr(0xBB) . chr(0xBF));
-            fputcsv($h, ['Ref #','Source','Feedback Type','Service Category','Report','Theme','Sentiment','Wing','Department','Reviewer','Date Reviewed','Assigned To','Submitted At']);
+            fputcsv($h, ['Ref #','Source','Feedback Type','Service Category','Report Excerpt','Theme','Sentiment','Wing','Department','Reviewer','Date Reviewed','Assigned To','Submitted At']);
             foreach ($feedbacks as $f) {
                 fputcsv($h, [
                     $f->reference_no,
@@ -211,7 +211,7 @@ class FeedbackReportController extends Controller
         return response()->streamDownload(function () use ($feedbacks): void {
             $h = fopen('php://output', 'w');
             fprintf($h, chr(0xEF) . chr(0xBB) . chr(0xBF));
-            fputcsv($h, ['Ref #','Source','Feedback Type','Service Category','Report','Theme','Sentiment','Wing','Department','Reviewer','Date Reviewed','Assigned To','Submitted At']);
+            fputcsv($h, ['Ref #','Source','Feedback Type','Service Category','Report Excerpt','Theme','Sentiment','Wing','Department','Reviewer','Date Reviewed','Assigned To','Submitted At']);
             foreach ($feedbacks as $f) {
                 fputcsv($h, [
                     $f->reference_no,
