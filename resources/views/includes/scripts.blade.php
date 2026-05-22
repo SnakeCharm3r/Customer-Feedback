@@ -34,6 +34,41 @@
    <script src="{{ asset('assets/js/pages/dashboard-ecommerce.init.js') }}"></script>
 
    <script>
+      /* ── Theme (dark / light) ───────────────────────────────────────────── */
+      (function () {
+         const STORAGE_KEY = 'ccbrt_theme';
+         const html = document.documentElement;
+         const saved = localStorage.getItem(STORAGE_KEY) || 'light';
+         html.setAttribute('data-bs-theme', saved);
+
+         document.addEventListener('DOMContentLoaded', function () {
+            const btn  = document.getElementById('theme-toggle-btn');
+            const icon = document.getElementById('theme-toggle-icon');
+            if (!btn || !icon) return;
+
+            function applyTheme(theme) {
+               html.setAttribute('data-bs-theme', theme);
+               localStorage.setItem(STORAGE_KEY, theme);
+               if (theme === 'dark') {
+                  icon.className = 'bi bi-sun fs-lg';
+                  btn.title = 'Switch to light mode';
+               } else {
+                  icon.className = 'bi bi-moon-stars fs-lg';
+                  btn.title = 'Switch to dark mode';
+               }
+            }
+
+            applyTheme(saved);
+
+            btn.addEventListener('click', function () {
+               const current = html.getAttribute('data-bs-theme') || 'light';
+               applyTheme(current === 'dark' ? 'light' : 'dark');
+            });
+         });
+      })();
+   </script>
+
+   <script>
       document.addEventListener('DOMContentLoaded', function () {
          const sidebarMenu = document.querySelector('.app-menu.navbar-menu');
 

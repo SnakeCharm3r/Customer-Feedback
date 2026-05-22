@@ -74,6 +74,5 @@
     </tbody>
 </table>
 
-<script>window.onload = function(){ window.print(); }</script>
 </body>
 </html>

@@ -4,7 +4,9 @@
     <div class="navbar-brand-box">
         <a href="{{ route('dashboard') }}" class="logo logo-dark admin-brand-link">
             <span class="admin-brand-shell">
-                <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo" class="admin-brand-logo admin-brand-logo-lg">
+                <span class="admin-brand-icon-circle">
+                    <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo" class="admin-brand-logo admin-brand-logo-lg">
+                </span>
                 <span class="admin-brand-text sidebar-brand-copy" style="color:#065321;">
                     <span class="admin-brand-title">{{ $systemSettings?->organization_name ?? 'CCBRT' }}</span>
                     <span class="admin-brand-subtitle">{{ $systemSettings?->portal_name ?? 'Feedback System' }}</span>
@@ -13,7 +15,9 @@
          </a>
         <a href="{{ route('dashboard') }}" class="logo logo-light admin-brand-link">
             <span class="admin-brand-shell">
-                <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo" class="admin-brand-logo admin-brand-logo-lg">
+                <span class="admin-brand-icon-circle">
+                    <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo" class="admin-brand-logo admin-brand-logo-lg">
+                </span>
                 <span class="admin-brand-text text-white sidebar-brand-copy">
                     <span class="admin-brand-title">{{ $systemSettings?->organization_name ?? 'CCBRT' }}</span>
                     <span class="admin-brand-subtitle">{{ $systemSettings?->portal_name ?? 'Feedback System' }}</span>
@@ -82,10 +86,18 @@
                 <li class="menu-title"><span>Reports</span></li>
 
                 <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
+                    <a class="nav-link menu-link {{ request()->routeIs('reports.analytics') ? 'active' : '' }}"
+                        href="{{ route('reports.analytics') }}">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        <span>Analytics</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link menu-link {{ request()->routeIs('reports.feedback.index') ? 'active' : '' }}"
                         href="{{ route('reports.feedback.index') }}">
                         <i class="bi bi-bar-chart-line"></i>
-                        <span>Reports</span>
+                        <span>Feedback Report</span>
                     </a>
                 </li>
                 @endif

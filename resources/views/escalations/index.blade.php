@@ -137,21 +137,21 @@
                 <tbody>
                     @forelse($escalations as $esc)
                     @php $hrs = $esc->elapsedHours(); @endphp
-                    <tr class="{{ $esc->isPending() && $hrs >= 72 ? 'table-danger bg-opacity-10' : '' }}">
+                    <tr class="{{ $esc->isPending() && $hrs >= 72 ? 'priority-row' : '' }}">
 
                         {{-- Reference --}}
                         <td class="ps-3 py-3">
-                            <span class="fw-semibold font-monospace" style="color:#065321;font-size:12px;">
-                                {{ $esc->reference }}
-                            </span>
+                            <span class="table-ref-link d-block">{{ $esc->reference }}</span>
+                            @if($esc->isPending() && $esc->elapsedHours() >= 72)
+                            <span class="badge bg-danger mt-1" style="font-size:9px;letter-spacing:.04em;">OVERDUE</span>
+                            @endif
                         </td>
 
                         {{-- Feedback --}}
                         <td class="py-3">
                             @if($esc->feedback)
                             <a href="{{ route('feedback.admin.show', $esc->feedback_id) }}"
-                               class="fw-semibold text-decoration-none font-monospace"
-                               style="color:#0b6b2c;font-size:12px;">
+                               class="table-ref-link">
                                 {{ $esc->feedback->reference_number ?? '—' }}
                             </a>
                             @else
@@ -239,7 +239,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <div>
-                                        <h6 class="modal-title fw-bold mb-0" style="color:#065321;">
+                                        <h6 class="modal-title fw-bold mb-0 table-ref-link">
                                             <i class="bi bi-chat-left-text me-2"></i>HOD Response — {{ $esc->reference }}
                                         </h6>
                                         <div class="text-muted small mt-1">
@@ -254,7 +254,7 @@
                                         <i class="bi bi-clock"></i>
                                         Response time: {{ $esc->escalated_at->diffForHumans($esc->responded_at, true) }} after escalation
                                     </div>
-                                    <div class="p-3 rounded" style="background:#f6fbf4;border-left:4px solid #0b6b2c;white-space:pre-wrap;font-size:14px;line-height:1.6;">{{ $esc->hod_response }}</div>
+                                    <div class="esc-response-box">{{ $esc->hod_response }}</div>
                                 </div>
                                 <div class="modal-footer border-0 pt-0">
                                     @if($esc->feedback)

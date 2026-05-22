@@ -108,7 +108,7 @@
 
                 <div class="mb-4">
                     <p class="text-muted small text-uppercase mb-2">Overall Experience</p>
-                    <div class="p-3 rounded" style="background:#f8f9fa;border-left:4px solid #065321;">
+                    <div class="feedback-field-box feedback-field-primary">
                         <p class="mb-0" style="white-space:pre-wrap;">{{ $feedback->overall_experience ?: $feedback->message ?: '—' }}</p>
                     </div>
                 </div>
@@ -116,7 +116,7 @@
                 @if($feedback->improvement_suggestion)
                     <div class="mb-4">
                         <p class="text-muted small text-uppercase mb-2">Suggested Improvement</p>
-                        <div class="p-3 rounded" style="background:#f8f9fa;border-left:4px solid #198754;">
+                        <div class="feedback-field-box feedback-field-success">
                             <p class="mb-0" style="white-space:pre-wrap;">{{ $feedback->improvement_suggestion }}</p>
                         </div>
                     </div>
@@ -125,7 +125,7 @@
                 @if($feedback->confidentiality_comment)
                     <div class="mb-4">
                         <p class="text-muted small text-uppercase mb-2">Confidentiality Explanation</p>
-                        <div class="p-3 rounded" style="background:#fff8e1;border-left:4px solid #ffc107;">
+                        <div class="feedback-field-box feedback-field-warning">
                             <p class="mb-0" style="white-space:pre-wrap;">{{ $feedback->confidentiality_comment }}</p>
                         </div>
                     </div>
@@ -133,7 +133,7 @@
 
                 <div class="mb-0">
                     <p class="text-muted small text-uppercase mb-2">Additional Comments</p>
-                    <div class="p-3 rounded" style="background:#f8f9fa;border-left:4px solid #065321;">
+                    <div class="feedback-field-box feedback-field-primary">
                         <p class="mb-0" style="white-space:pre-wrap;">{{ $feedback->message ?: 'No additional comments provided.' }}</p>
                     </div>
                 </div>
@@ -332,7 +332,7 @@
 
                 {{-- Review Metadata --}}
                 @if($feedback->reviewedBy || $feedback->reviewed_at)
-                <div class="mb-3 p-2 rounded" style="background:#eef7e8;border-left:3px solid #0b6b2c;">
+                <div class="last-reviewed-box mb-3 p-2 rounded">
                     <p class="text-muted small text-uppercase mb-1">Last Reviewed</p>
                     <p class="fw-semibold small mb-0">{{ $feedback->reviewedBy?->getFullName() ?? 'Not reviewed' }}</p>
                     <p class="text-muted small mb-0">{{ $feedback->reviewed_at?->format('d M Y, H:i') ?? '—' }}</p>
@@ -456,10 +456,10 @@
                     @if($escalations->count())
                     <div class="mb-3">
                         @foreach($escalations as $esc)
-                        <div class="d-flex align-items-center justify-content-between p-2 rounded mb-1"
-                             style="background:#f6fbf4; border:1px solid #ddeedd; font-size:12px;">
+                        <div class="esc-row-entry d-flex align-items-center justify-content-between p-2 rounded mb-1"
+                             style="font-size:12px;">
                             <div>
-                                <span class="fw-semibold" style="color:#065321; font-family:monospace;">{{ $esc->reference }}</span>
+                                <span class="table-ref-link">{{ $esc->reference }}</span>
                                 &nbsp;&rarr;&nbsp; {{ $esc->hod?->name }} ({{ $esc->hod?->department }})
                                 &nbsp;&bull;&nbsp; {{ $esc->escalated_at->diffForHumans() }}
                             </div>

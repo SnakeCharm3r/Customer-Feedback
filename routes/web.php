@@ -89,6 +89,8 @@ Route::middleware('auth')->group(function () {
 
     // Feedback Report Routes
     Route::get('/reports/feedback', [FeedbackReportController::class, 'index'])->name('reports.feedback.index');
+    Route::get('/reports/analytics', [FeedbackReportController::class, 'analytics'])->name('reports.analytics');
+    Route::get('/reports/analytics/export/excel', [FeedbackReportController::class, 'exportAnalyticsExcel'])->name('reports.analytics.export.excel');
     Route::get('/reports/feedback/export/csv', [FeedbackReportController::class, 'exportCsv'])->name('reports.feedback.export.csv');
     Route::get('/reports/feedback/export/excel', [FeedbackReportController::class, 'exportExcel'])->name('reports.feedback.export.excel');
     Route::get('/reports/feedback/export/pdf', [FeedbackReportController::class, 'exportPdf'])->name('reports.feedback.export.pdf');

@@ -100,6 +100,72 @@
             justify-content: flex-start;
         }
     }
+
+    /* ── Dark mode overrides ── */
+    [data-bs-theme="dark"] .users-toolbar {
+        background: var(--dm-bg-surface, #2a3042) !important;
+        border-color: rgba(148,200,61,0.15) !important;
+        box-shadow: none !important;
+    }
+
+    [data-bs-theme="dark"] .users-toolbar h4,
+    [data-bs-theme="dark"] .users-toolbar .breadcrumb-item.active,
+    [data-bs-theme="dark"] .users-toolbar .breadcrumb-item a {
+        color: var(--dm-text, #e2e8f0) !important;
+    }
+
+    [data-bs-theme="dark"] .users-toolbar .border-top {
+        border-color: rgba(255,255,255,0.08) !important;
+    }
+
+    [data-bs-theme="dark"] .users-summary-card {
+        border-color: rgba(148,200,61,0.12) !important;
+    }
+
+    [data-bs-theme="dark"] .users-summary-card .fw-bold.text-dark,
+    [data-bs-theme="dark"] .users-summary-card .fw-bold {
+        color: var(--dm-text, #e2e8f0) !important;
+    }
+
+    [data-bs-theme="dark"] .users-filter-card,
+    [data-bs-theme="dark"] .users-table-card {
+        border-color: rgba(148,200,61,0.12) !important;
+    }
+
+    [data-bs-theme="dark"] .users-table thead th {
+        background: var(--dm-bg-raised, #323a4e) !important;
+        border-bottom-color: rgba(255,255,255,0.08) !important;
+        color: var(--dm-text-muted, #94a3b8) !important;
+    }
+
+    [data-bs-theme="dark"] .users-table tbody tr:hover {
+        background: rgba(148,200,61,0.06) !important;
+    }
+
+    [data-bs-theme="dark"] .users-table .fw-semibold.text-dark,
+    [data-bs-theme="dark"] .users-table .small.text-dark,
+    [data-bs-theme="dark"] .users-table td.text-dark {
+        color: var(--dm-text, #e2e8f0) !important;
+    }
+
+    [data-bs-theme="dark"] .users-filter-chip {
+        background: rgba(148,200,61,0.12) !important;
+        color: #94c840 !important;
+    }
+
+    [data-bs-theme="dark"] .users-pending-card {
+        border-color: rgba(245,158,11,0.3) !important;
+        border-left-color: #f59e0b !important;
+    }
+
+    [data-bs-theme="dark"] .users-pending-card .bg-warning.bg-opacity-10 {
+        background: rgba(245,158,11,0.12) !important;
+    }
+
+    [data-bs-theme="dark"] .badge-system-admin {
+        background: rgba(109,40,217,0.28) !important;
+        color: #c4b5fd !important;
+    }
 </style>
 
 @php
@@ -338,10 +404,10 @@
                                     {{ strtoupper(substr($user->fname ?? $user->name,0,1)) }}{{ strtoupper(substr($user->lname ?? '',0,1)) }}
                                 </div>
                                 <div>
-                                    <div class="fw-semibold text-dark">
+                                    <div class="fw-semibold dm-text-adapt">
                                         {{ $user->getFullName() }}
                                         @if($user->is_first_user)
-                                        <span class="badge ms-1" style="background:#ede9fe;color:#6d28d9;font-size:10px;">System Admin</span>
+                                        <span class="badge badge-system-admin ms-1" style="background:#ede9fe;color:#6d28d9;font-size:10px;">System Admin</span>
                                         @endif
                                     </div>
                                     <div class="text-muted" style="font-size:11px;">{{ $user->email }}</div>
@@ -366,7 +432,7 @@
                         </td>
                         <td class="py-3">
                             @if($user->approvedBy)
-                            <div class="small text-dark">{{ $user->approvedBy->getFullName() }}</div>
+                            <div class="small dm-text-adapt">{{ $user->approvedBy->getFullName() }}</div>
                             @if($user->approved_at)
                             <div class="text-muted" style="font-size:11px;">{{ $user->approved_at->format('d M Y') }}</div>
                             @endif
@@ -377,7 +443,7 @@
                             @endif
                         </td>
                         <td class="py-3">
-                            <div class="small text-dark">{{ $user->created_at->format('d M Y') }}</div>
+                            <div class="small dm-text-adapt">{{ $user->created_at->format('d M Y') }}</div>
                             <div class="text-muted" style="font-size:11px;">{{ $user->created_at->diffForHumans() }}</div>
                         </td>
                         <td class="text-end pe-3 py-3">

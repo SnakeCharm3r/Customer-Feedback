@@ -72,7 +72,7 @@
 ══════════════════════════════════════════════════════════════════════ --}}
 <div class="row mb-1">
     <div class="col-12">
-        <div class="rounded-3 px-4 py-3 d-flex flex-wrap align-items-center justify-content-between gap-3"
+        <div class="dm-welcome-card rounded-3 px-4 py-3 d-flex flex-wrap align-items-center justify-content-between gap-3"
              style="background:#fff;border:1px solid #e9ecef;border-left:4px solid #0b6b2c;box-shadow:0 2px 8px rgba(0,0,0,.04);">
             <div>
                 <h4 class="mb-1 fw-bold text-dark">
@@ -343,7 +343,7 @@
                     </div>
                     <div class="flex-grow-1 overflow-hidden">
                         <div class="d-flex align-items-center justify-content-between gap-1">
-                            <span class="fw-semibold small text-dark text-truncate font-monospace">{{ $item->reference_number }}</span>
+                            <span class="table-ref-link text-truncate">{{ $item->reference_number }}</span>
                             {!! $item->getStatusBadge() !!}
                         </div>
                         <div class="text-muted text-truncate" style="font-size:11px;">
@@ -567,9 +567,9 @@
                             @forelse($recentFeedback as $item)
                             <tr>
                                 <td class="ps-3">
-                                    <span class="fw-medium text-primary font-monospace small">{{ $item->reference_number }}</span>
+                                    <span class="table-ref-link d-block">{{ $item->reference_number }}</span>
                                     @if($item->is_priority)
-                                        <span class="badge bg-danger ms-1" style="font-size:9px;">PRIORITY</span>
+                                        <span class="badge bg-danger mt-1" style="font-size:9px;letter-spacing:.04em;">PRIORITY</span>
                                     @endif
                                 </td>
                                 <td>

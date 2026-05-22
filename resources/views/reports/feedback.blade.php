@@ -2,6 +2,30 @@
 @section('title', 'Feedback Reports')
 
 @section('content')
+<style>
+    /* ── Reports dark mode overrides ── */
+    [data-bs-theme="dark"] .reports-table thead th {
+        background: var(--dm-bg-raised, #323a4e) !important;
+        border-bottom-color: rgba(255,255,255,0.08) !important;
+        color: var(--dm-text-muted, #94a3b8) !important;
+    }
+
+    [data-bs-theme="dark"] .reports-table .badge.bg-light {
+        background: rgba(255,255,255,0.08) !important;
+        border-color: rgba(255,255,255,0.12) !important;
+        color: var(--dm-text, #e2e8f0) !important;
+    }
+
+    [data-bs-theme="dark"] .reports-table .fw-semibold.small,
+    [data-bs-theme="dark"] .reports-table td .fw-semibold {
+        color: var(--dm-text, #e2e8f0) !important;
+    }
+
+    [data-bs-theme="dark"] .reports-table td.text-muted .fw-semibold {
+        color: var(--dm-text-muted, #94a3b8) !important;
+    }
+</style>
+
 @php
     $summaryCards = [
         ['label' => 'Total Feedback', 'value' => $summary['total'], 'icon' => 'bi-bar-chart-line', 'class' => 'primary'],
@@ -156,8 +180,8 @@
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" style="font-size:13px;">
-                <thead class="table-light">
+            <table class="table table-hover align-middle mb-0 reports-table" style="font-size:13px;">
+                <thead>
                     <tr>
                         <th class="ps-3 text-nowrap">Ref #</th>
                         <th>Source</th>
@@ -176,7 +200,7 @@
                         @endphp
                         <tr>
                             <td class="ps-3 text-nowrap">
-                                <div class="fw-semibold text-primary font-monospace small">{{ $report->reference_no }}</div>
+                                <div class="table-ref-link">{{ $report->reference_no }}</div>
                                 <div class="text-muted" style="font-size:11px;">{{ $report->getStatusLabel() }} • {{ $report->getFeedbackTypeLabel() }}</div>
                             </td>
                             <td>

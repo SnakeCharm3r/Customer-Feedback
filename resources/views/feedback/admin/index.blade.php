@@ -207,27 +207,16 @@
                         $fbColor = $typeColors[$fb->feedback_type] ?? 'secondary';
                         $fbIcon  = $typeIcons[$fb->feedback_type]  ?? 'bi-chat';
                     @endphp
-                    <tr class="{{ $fb->is_priority ? 'table-danger bg-opacity-10' : '' }}">
+                    <tr class="{{ $fb->is_priority ? 'priority-row' : '' }}">
 
                         {{-- Reference --}}
                         <td class="ps-3 py-3">
-                            <div class="d-flex align-items-center gap-2">
-                                @if($fb->is_priority)
-                                <span class="text-danger flex-shrink-0" title="High Priority">
-                                    <i class="bi bi-exclamation-circle-fill" style="font-size:14px;"></i>
-                                </span>
-                                @endif
-                                <div>
-                                    <a href="{{ route('feedback.admin.show', $fb) }}"
-                                       class="fw-semibold font-monospace text-decoration-none"
-                                       style="color:#065321;font-size:12px;">
-                                        {{ $fb->reference_number }}
-                                    </a>
-                                    @if($fb->is_priority)
-                                    <div><span class="badge bg-danger" style="font-size:9px;">PRIORITY</span></div>
-                                    @endif
-                                </div>
-                            </div>
+                            <a href="{{ route('feedback.admin.show', $fb) }}" class="table-ref-link d-block">
+                                {{ $fb->reference_number }}
+                            </a>
+                            @if($fb->is_priority)
+                            <span class="badge bg-danger mt-1" style="font-size:9px;letter-spacing:.04em;">PRIORITY</span>
+                            @endif
                         </td>
 
                         {{-- Patient --}}

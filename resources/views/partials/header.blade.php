@@ -75,6 +75,15 @@
                     </button>
                 </div>
 
+                <!-- Theme toggle -->
+                <div class="ms-1 header-item d-none d-sm-flex">
+                    <button type="button" id="theme-toggle-btn"
+                        class="btn btn-icon btn-topbar btn-ghost-dark rounded-circle"
+                        title="Toggle dark / light mode">
+                        <i class="bi bi-moon-stars fs-lg" id="theme-toggle-icon"></i>
+                    </button>
+                </div>
+
                 <!-- New Feedback Notifications -->
                 <div class="dropdown topbar-head-dropdown ms-1 header-item" id="notificationDropdown">
                     <button type="button" class="btn btn-icon btn-topbar btn-ghost-dark rounded-circle position-relative"
