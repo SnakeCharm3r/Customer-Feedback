@@ -93,7 +93,16 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-xl-3">
+            <div class="col-6 col-md-3 col-xl-2">
+                <label class="form-label small fw-semibold mb-1">Location</label>
+                <select name="location" class="form-select form-select-sm">
+                    <option value="">All Locations</option>
+                    @foreach($allLocations as $locKey => $locLabel)
+                        <option value="{{ $locKey }}" {{ ($filters['location'] ?? '') === $locKey ? 'selected' : '' }}>{{ $locLabel }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-6 col-md-3 col-xl-2">
                 <label class="form-label small fw-semibold mb-1">Department</label>
                 <select name="department_id" class="form-select form-select-sm">
                     <option value="">All Departments</option>
@@ -378,6 +387,7 @@
                                 <th class="ps-3">Collection Means</th>
                                 <th>Date</th>
                                 <th>Month</th>
+                                <th>Location</th>
                                 <th>Tel #</th>
                                 <th style="min-width:220px;">Comment / Suggestion</th>
                                 <th>Theme</th>
@@ -385,6 +395,7 @@
                                 <th>Sentiment</th>
                                 <th>Wing</th>
                                 <th>Unit</th>
+                                <th>Satisfied?</th>
                                 <th class="pe-3">Platform</th>
                             </tr>
                         </thead>
@@ -394,6 +405,16 @@
                                 <td class="ps-3 fw-semibold">{{ $f->getSourceLabel() }}</td>
                                 <td>{{ $f->created_at?->format('d') }}</td>
                                 <td>{{ $f->created_at?->format('M') }}</td>
+                                @php $locLabel = \App\Models\Feedback::getLocations(false)[$f->location] ?? null; @endphp
+                                <td>
+                                    @if($f->isMabinti())
+                                        <span class="badge" style="background:#dcfce7;color:#14532d;"><i class="bi bi-shop me-1"></i>Mabinti</span>
+                                    @elseif($locLabel)
+                                        <span class="badge bg-light text-secondary">{{ $locLabel }}</span>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
                                 <td class="text-muted">{{ $f->phone ?: '—' }}</td>
                                 <td class="text-muted">{{ \Illuminate\Support\Str::limit($f->message ?? $f->overall_experience ?? '', 100) }}</td>
                                 <td><span class="badge bg-secondary-subtle text-secondary">{{ $f->getThemeLabel() }}</span></td>
@@ -413,10 +434,21 @@
                                 </td>
                                 <td class="text-muted">{{ $f->getWingLabel() }}</td>
                                 <td class="text-muted">{{ $f->department?->name ?? (is_array($f->service_units) ? implode(', ', $f->service_units) : ($f->service_units ?? '—')) }}</td>
+                                <td>
+                                    @if($f->isMabinti() && !is_null($f->product_satisfied))
+                                        @if($f->product_satisfied)
+                                            <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Yes</span>
+                                        @else
+                                            <span class="badge bg-danger-subtle text-danger"><i class="bi bi-x-circle me-1"></i>No</span>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
                                 <td class="pe-3 text-muted">{{ $f->getServiceCategoryLabel() }}</td>
                             </tr>
                             @empty
-                            <tr><td colspan="11" class="text-center py-4 text-muted">
+                            <tr><td colspan="13" class="text-center py-4 text-muted">
                                 <i class="bi bi-inbox d-block fs-2 mb-2 opacity-25"></i>No records for selected filters.
                             </td></tr>
                             @endforelse

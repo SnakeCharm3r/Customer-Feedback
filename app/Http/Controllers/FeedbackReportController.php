@@ -75,15 +75,16 @@ class FeedbackReportController extends Controller
         $user = Auth::user();
         abort_unless($user?->canViewReports() || $user?->canViewWeeklyReport(), 403);
 
-        $filters = $request->only(['month', 'year', 'source', 'department_id']);
+        $filters = $request->only(['month', 'year', 'source', 'department_id', 'location']);
 
         // ── Base scoped query helper ──
         $base = function () use ($filters): Builder {
             return Feedback::query()
-                ->when(!empty($filters['month']),       fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
-                ->when(!empty($filters['year']),        fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
-                ->when(!empty($filters['source']),      fn(Builder $q) => $q->where('source', $filters['source']))
-                ->when(!empty($filters['department_id']),fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']));
+                ->when(!empty($filters['month']),        fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
+                ->when(!empty($filters['year']),         fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
+                ->when(!empty($filters['source']),       fn(Builder $q) => $q->where('source', $filters['source']))
+                ->when(!empty($filters['department_id']),fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
+                ->when(!empty($filters['location']),     fn(Builder $q) => $q->where('location', $filters['location']));
         };
 
         // ── 1. Sentiment (Feedback Type) ──
@@ -172,14 +173,90 @@ class FeedbackReportController extends Controller
             ->orderBy('created_at')
             ->get();
 
+        // ── 8. Mabinti Centre metrics ──
+        $mabintiBase = function () use ($filters): Builder {
+            return Feedback::query()
+                ->where('location', 'mabinti')
+                ->when(!empty($filters['month']),         fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
+                ->when(!empty($filters['year']),          fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
+                ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
+                ->when(!empty($filters['department_id']), fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']));
+        };
+
+        $mabintiTotal       = $mabintiBase()->count();
+        $mabintiSatisfied   = $mabintiBase()->whereNotNull('product_satisfied')->where('product_satisfied', 1)->count();
+        $mabintiUnsatisfied = $mabintiBase()->whereNotNull('product_satisfied')->where('product_satisfied', 0)->count();
+        $mabintiSurveyTotal = $mabintiSatisfied + $mabintiUnsatisfied;
+        $mabintiSatisfiedPct = $mabintiSurveyTotal > 0
+            ? round($mabintiSatisfied / $mabintiSurveyTotal * 100, 1) : null;
+
+        // Product satisfaction by feedback type
+        $mabintiByTypeRaw = $mabintiBase()
+            ->selectRaw('feedback_type, product_satisfied, COUNT(*) as cnt')
+            ->whereNotNull('product_satisfied')
+            ->groupBy('feedback_type', 'product_satisfied')
+            ->get();
+        $mabintiByType = [];
+        foreach ($mabintiByTypeRaw as $r) {
+            $mabintiByType[$r->feedback_type][$r->product_satisfied ? 'satisfied' : 'unsatisfied'] = $r->cnt;
+        }
+
+        // Monthly Mabinti satisfaction trend
+        $mabintiTrendRaw = Feedback::query()
+            ->where('location', 'mabinti')
+            ->whereNotNull('product_satisfied')
+            ->whereYear('created_at', $trendYear)
+            ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
+            ->selectRaw('MONTH(created_at) as mo, product_satisfied, COUNT(*) as cnt')
+            ->groupBy('mo', 'product_satisfied')
+            ->orderBy('mo')
+            ->get();
+        $mabintiTrendSat   = array_fill(0, 12, 0);
+        $mabintiTrendUnsat = array_fill(0, 12, 0);
+        foreach ($mabintiTrendRaw as $r) {
+            $idx = $r->mo - 1;
+            if ($r->product_satisfied) $mabintiTrendSat[$idx]   = $r->cnt;
+            else                       $mabintiTrendUnsat[$idx] = $r->cnt;
+        }
+
+        // Mabinti feedback type breakdown
+        $mabintiFeedbackTypeRaw = $mabintiBase()
+            ->selectRaw('feedback_type, COUNT(*) as cnt')
+            ->groupBy('feedback_type')->orderByDesc('cnt')->get();
+        $mabintiFeedbackTypes = $mabintiFeedbackTypeRaw->map(fn($r) => [
+            'key'   => $r->feedback_type,
+            'label' => __('portal.options.feedback_types.' . $r->feedback_type),
+            'count' => $r->cnt,
+            'pct'   => $mabintiTotal > 0 ? round($r->cnt / $mabintiTotal * 100, 1) : 0,
+        ])->values()->toArray();
+
+        // Top products/services selected by Mabinti customers
+        $mabintiProductsRaw = $mabintiBase()->whereNotNull('service_units')->get()
+            ->flatMap(fn($f) => (array)($f->service_units ?? []))
+            ->countBy()
+            ->sortDesc()
+            ->take(10);
+        $customLabels = \App\Models\LocationServiceItem::active()->pluck('label', 'key')->all();
+        $mabintiProducts = $mabintiProductsRaw->map(fn($cnt, $key) => [
+            'key'   => $key,
+            'label' => $customLabels[$key] ?? __('portal.options.service_units.' . $key),
+            'count' => $cnt,
+        ])->values()->toArray();
+
         $departments    = Department::orderBy('name')->get();
         $availableYears = Feedback::selectRaw('YEAR(created_at) as yr')->groupBy('yr')->orderByDesc('yr')->pluck('yr');
+        $allLocations   = Feedback::getLocations(false);
 
         return view('reports.analytics', compact(
             'filters', 'sentiment', 'collectionMeans', 'themesByCat',
             'generalThemes', 'generalTotal', 'trend', 'months', 'trendYear',
             'totalAll', 'totalPositive', 'totalNegative', 'totalNeutral',
-            'categories', 'departments', 'availableYears', 'weeklyRows'
+            'categories', 'departments', 'availableYears', 'weeklyRows',
+            'allLocations',
+            'mabintiTotal', 'mabintiSatisfied', 'mabintiUnsatisfied',
+            'mabintiSurveyTotal', 'mabintiSatisfiedPct',
+            'mabintiByType', 'mabintiFeedbackTypes', 'mabintiProducts',
+            'mabintiTrendSat', 'mabintiTrendUnsat'
         ));
     }
 
@@ -187,13 +264,14 @@ class FeedbackReportController extends Controller
     {
         abort_unless(Auth::user()?->canViewReports() || Auth::user()?->canViewWeeklyReport(), 403);
 
-        $filters = $request->only(['month', 'year', 'source', 'department_id']);
+        $filters = $request->only(['month', 'year', 'source', 'department_id', 'location']);
         $base = function () use ($filters): Builder {
             return Feedback::query()
                 ->when(!empty($filters['month']),         fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
                 ->when(!empty($filters['year']),          fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
                 ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
-                ->when(!empty($filters['department_id']), fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']));
+                ->when(!empty($filters['department_id']), fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
+                ->when(!empty($filters['location']),      fn(Builder $q) => $q->where('location', $filters['location']));
         };
 
         $spreadsheet = new Spreadsheet();
@@ -401,6 +479,59 @@ class FeedbackReportController extends Controller
         $sh6->getStyle('E5:E' . max(5, $wRow - 1))->getAlignment()->setWrapText(true);
         $sh6->freezePane('A5');
         $sh6->setAutoFilter('A4:' . $lastWCol . '4');
+
+        // ════════════════════════════════════
+        // SHEET 7: Mabinti Centre Analytics
+        // ════════════════════════════════════
+        $sh7 = $spreadsheet->createSheet()->setTitle('Mabinti Centre');
+        $mabintiHeaders = ['Date','Feedback Type','Product \ Service','Other Product','Service Rating','Satisfied?','Satisfaction Comment','Overall Experience'];
+        $lastMCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($mabintiHeaders));
+        $brandSheet($sh7, 'Mabinti Centre Feedback', count($mabintiHeaders));
+        $sh7->fromArray($mabintiHeaders, null, 'A4');
+        $sh7->getStyle('A4:' . $lastMCol . '4')->applyFromArray([
+            'font'      => ['bold' => true, 'size' => 9, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '14532d']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '065321']]],
+        ]);
+        $sh7->getRowDimension(4)->setRowHeight(18);
+        foreach ([16, 14, 30, 20, 14, 12, 40, 50] as $i => $w) {
+            $sh7->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1))->setWidth($w);
+        }
+        $mabintiFeedbacks = Feedback::query()
+            ->where('location', 'mabinti')
+            ->when(!empty($filters['month']),         fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
+            ->when(!empty($filters['year']),          fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
+            ->orderBy('created_at')->get();
+        $customLbls = \App\Models\LocationServiceItem::active()->pluck('label', 'key')->all();
+        $mRow = 5;
+        foreach ($mabintiFeedbacks as $f) {
+            $units = collect((array)($f->service_units ?? []))->map(function ($key) use ($customLbls) {
+                $t = __('portal.options.service_units.' . $key);
+                return ($t === 'portal.options.service_units.' . $key) ? ($customLbls[$key] ?? $key) : $t;
+            })->implode(', ');
+            $satisfied = is_null($f->product_satisfied) ? '—' : ($f->product_satisfied ? 'Yes' : 'No');
+            $sh7->fromArray([
+                $f->created_at?->format('d M Y') ?? '',
+                $f->getFeedbackTypeLabel(),
+                $units,
+                $f->service_unit_other_text ?? '',
+                $f->service_rating ? $f->getServiceRatingLabel() : '',
+                $satisfied,
+                $f->product_satisfaction_comment ?? '',
+                $f->overall_experience ?? $f->message ?? '',
+            ], null, 'A' . $mRow);
+            $sh7->getStyle('A' . $mRow . ':' . $lastMCol . $mRow)->applyFromArray([
+                'fill'    => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => ($mRow % 2 === 0) ? 'f0fdf4' : 'FFFFFF']],
+                'borders' => ['bottom' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'bbf7d0']]],
+                'font'    => ['size' => 9],
+            ]);
+            $sh7->getRowDimension($mRow)->setRowHeight(15);
+            $mRow++;
+        }
+        $sh7->getStyle('G5:H' . max(5, $mRow - 1))->getAlignment()->setWrapText(true);
+        $sh7->freezePane('A5');
+        $sh7->setAutoFilter('A4:' . $lastMCol . '4');
 
         $spreadsheet->setActiveSheetIndex(0);
 

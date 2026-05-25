@@ -16,6 +16,11 @@ class Feedback extends Model
     protected $fillable = [
         'reference_no',
         'patient_name',
+        'organization_name',
+        'submitter_location_text',
+        'service_unit_other_text',
+        'product_satisfied',
+        'product_satisfaction_comment',
         'email',
         'phone',
         'service_units',
@@ -336,6 +341,11 @@ class Feedback extends Model
         return $this->phone;
     }
 
+    public function isMabinti(): bool
+    {
+        return $this->location === 'mabinti';
+    }
+
     public function getIsPriorityAttribute(): bool
     {
         return (bool) $this->is_urgent;
@@ -348,8 +358,25 @@ class Feedback extends Model
 
     public function getServiceUnitsLabelsAttribute(): array
     {
+        $locale = app()->getLocale();
+
+        // Pre-load custom labels from DB for any units that don't have a lang key
+        static $customLabels = null;
+        if ($customLabels === null) {
+            $customLabels = \App\Models\LocationServiceItem::active()
+                ->pluck('label', 'key')
+                ->all();
+        }
+
         return collect($this->service_units ?? [])
-            ->map(fn ($unit) => __('portal.options.service_units.' . $unit, [], app()->getLocale()))
+            ->map(function ($unit) use ($locale, $customLabels) {
+                $translated = __('portal.options.service_units.' . $unit, [], $locale);
+                // If translation returned the raw key (i.e. no entry exists), fall back to DB label
+                if ($translated === 'portal.options.service_units.' . $unit) {
+                    return $customLabels[$unit] ?? ucwords(str_replace('_', ' ', $unit));
+                }
+                return $translated;
+            })
             ->values()
             ->all();
     }

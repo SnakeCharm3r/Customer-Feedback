@@ -293,6 +293,61 @@
                                 </div>
                             </div>
 
+                            <!-- ③ Customer Experience -->
+                            <div class="form-section-header">
+                                <span class="section-badge">3</span>
+                                <h5>{{ __('portal.feedback_create.sections.customer_experience') }}</h5>
+                            </div>
+
+                            {{-- ── Mabinti Centre compliment extra fields (shown via JS when location=mabinti + type=compliment) ── --}}
+                            <div id="mabinti-compliment-fields" class="mb-4" style="display:none;">
+                                <div class="alert mb-3" style="background:#f0fdf4;border-left:4px solid #15803d;border-radius:6px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-shop" style="color:#15803d;font-size:1.2rem;"></i>
+                                        <div>
+                                            <strong style="color:#14532d;">Mabinti Centre — Compliment Submission</strong>
+                                            <p class="mb-0 small text-muted mt-1">Your name and organisation (if applicable) will be included in our records. All fields below are optional.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="organization_name" class="form-label">Organisation / Company <span class="text-muted fw-normal small">(optional)</span></label>
+                                        <input type="text" class="form-control form-control-ccbrt @error('organization_name') is-invalid @enderror"
+                                               id="organization_name" name="organization_name"
+                                               value="{{ old('organization_name') }}"
+                                               placeholder="e.g. TRA, Danish Ambassador Tanzania">
+                                        <div class="form-text text-muted">Enter the name of your company or organisation if you are writing on their behalf.</div>
+                                        @error('organization_name')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="submitter_location_text" class="form-label">Your Location / From <span class="text-muted fw-normal small">(optional)</span></label>
+                                        <input type="text" class="form-control form-control-ccbrt @error('submitter_location_text') is-invalid @enderror"
+                                               id="submitter_location_text" name="submitter_location_text"
+                                               value="{{ old('submitter_location_text') }}"
+                                               placeholder="e.g. Dar es Salaam, Kenya, UK Embassy">
+                                        @error('submitter_location_text')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="mb-0">
+                                    <label for="mabinti_compliment_text" class="form-label fw-semibold">Your Compliment <span class="text-muted fw-normal small">(optional)</span></label>
+                                    <textarea class="form-control form-control-ccbrt @error('message') is-invalid @enderror"
+                                              id="mabinti_compliment_text" name="message" rows="4"
+                                              placeholder="Share your kind words about Mabinti Centre — our products, team, or service...">{{ old('message') }}</textarea>
+                                    <div class="form-text text-muted">This will be recorded as your compliment text.</div>
+                                    @error('message')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            {{-- ── Standard service / experience questions (hidden when Mabinti compliment) ── --}}
+                            <div id="standard-experience-fields">
+
                             @php
                                 $serviceRatings  = \App\Models\Feedback::SERVICE_RATINGS;
                                 $allClientUnits  = \App\Models\Feedback::SERVICE_UNITS_OPD
@@ -300,12 +355,6 @@
                                                  + \App\Models\Feedback::SERVICE_UNITS_THEATRE;
                                 $oldUnits        = old('service_units', []);
                             @endphp
-
-                            <!-- ③ Customer Experience -->
-                            <div class="form-section-header">
-                                <span class="section-badge">3</span>
-                                <h5>{{ __('portal.feedback_create.sections.customer_experience') }}</h5>
-                            </div>
 
                             <div class="mb-4" id="service-units-section">
                                 <label class="form-label fw-semibold">1. {{ __('portal.feedback_create.questions.service_offered') }}</label>
@@ -337,6 +386,17 @@
                                 @error('service_units')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
+                                {{-- Other text input (shown when Other checkbox is ticked) --}}
+                                <div id="service-unit-other-wrap" class="mt-2" style="display:none;">
+                                    <input type="text"
+                                           class="form-control form-control-ccbrt @error('service_unit_other_text') is-invalid @enderror"
+                                           id="service_unit_other_text" name="service_unit_other_text"
+                                           value="{{ old('service_unit_other_text') }}"
+                                           placeholder="Please specify the product or service you received...">
+                                    @error('service_unit_other_text')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
 
                             <div class="mb-4">
@@ -369,7 +429,8 @@
                             {{-- Fields hidden when feedback_type = compliment --}}
                             <div id="non-compliment-fields">
 
-                            <div class="row mb-4">
+                            {{-- Q3: Mabinti → product satisfaction | Standard → confidentiality --}}
+                            <div id="q3-confidentiality-block" class="row mb-4">
                                 <div class="col-lg-6 mb-3">
                                     <label class="form-label fw-semibold">3. {{ __('portal.feedback_create.questions.confidentiality') }}</label>
                                     <div class="confidentiality-choice-group">
@@ -386,6 +447,28 @@
                                               id="confidentiality_comment" name="confidentiality_comment" rows="3"
                                               placeholder="{{ __('portal.feedback_create.fields.confidentiality_comment_placeholder') }}">{{ old('confidentiality_comment') }}</textarea>
                                     @error('confidentiality_comment')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div id="q3-product-satisfaction-block" class="row mb-4" style="display:none;">
+                                <div class="col-lg-6 mb-3">
+                                    <label class="form-label fw-semibold">3. Were you satisfied with the delivery and quality / colour of the product?</label>
+                                    <div class="confidentiality-choice-group">
+                                        <input class="confidentiality-radio" type="radio" name="product_satisfied" id="product_satisfied_yes" value="1" {{ old('product_satisfied') === '1' ? 'checked' : '' }}>
+                                        <label class="confidentiality-choice" for="product_satisfied_yes"><i class="bi bi-check-circle"></i>Yes</label>
+
+                                        <input class="confidentiality-radio" type="radio" name="product_satisfied" id="product_satisfied_no" value="0" {{ old('product_satisfied') === '0' ? 'checked' : '' }}>
+                                        <label class="confidentiality-choice" for="product_satisfied_no"><i class="bi bi-x-circle"></i>No</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 mb-3">
+                                    <label for="product_satisfaction_comment" class="form-label">If no, please explain</label>
+                                    <textarea class="form-control form-control-ccbrt @error('product_satisfaction_comment') is-invalid @enderror"
+                                              id="product_satisfaction_comment" name="product_satisfaction_comment" rows="3"
+                                              placeholder="Tell us what was wrong with the delivery, quality or colour...">{{ old('product_satisfaction_comment') }}</textarea>
+                                    @error('product_satisfaction_comment')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -416,13 +499,15 @@
 
                             </div>{{-- end #non-compliment-fields --}}
 
+                            </div>{{-- end #standard-experience-fields --}}
+
                             <!-- ④ Additional Details -->
                             <div class="form-section-header">
                                 <span class="section-badge">4</span>
                                 <h5>{{ __('portal.feedback_create.sections.additional_details') }}</h5>
                             </div>
 
-                            <div class="mb-4">
+                            <div class="mb-4" id="standard-message-field">
                                 <label for="message" class="form-label">{{ __('portal.feedback_create.fields.message') }}</label>
                                 <textarea class="form-control form-control-ccbrt @error('message') is-invalid @enderror"
                                           id="message" name="message" rows="4"
@@ -532,7 +617,11 @@
     }
 
     // --- Show / hide complaint-specific fields based on feedback type ---
-    const nonComplimentBlock = document.getElementById('non-compliment-fields');
+    const nonComplimentBlock        = document.getElementById('non-compliment-fields');
+    const standardExperienceFields   = document.getElementById('standard-experience-fields');
+    const standardMessageField        = document.getElementById('standard-message-field');
+    const mabintiComplimentFields     = document.getElementById('mabinti-compliment-fields');
+    const mabintiComplimentTextarea   = document.getElementById('mabinti_compliment_text');
     const feedbackTypeRadios = document.querySelectorAll('input[name="feedback_type"]');
     const urgentCheckbox = document.getElementById('is_urgent');
     const phoneField = document.getElementById('phone');
@@ -541,16 +630,49 @@
     const consentOptionCard = document.getElementById('consentOptionCard');
     const phoneFollowupNote = document.getElementById('phoneFollowupNote');
 
+    const q3ConfidentialityBlock    = document.getElementById('q3-confidentiality-block');
+    const q3ProductSatisfactionBlock = document.getElementById('q3-product-satisfaction-block');
+
+    function isMabintiLocation() {
+        const locEl = document.getElementById('location');
+        return locEl && locEl.value === 'mabinti';
+    }
+
+    function isMabintiComplimentMode() {
+        const typeEl = document.querySelector('input[name="feedback_type"]:checked');
+        return isMabintiLocation() && typeEl && typeEl.value === 'compliment';
+    }
+
+    function applyQ3Visibility() {
+        const isMabinti = isMabintiLocation();
+        if (q3ConfidentialityBlock)     q3ConfidentialityBlock.style.display     = isMabinti ? 'none' : '';
+        if (q3ProductSatisfactionBlock) q3ProductSatisfactionBlock.style.display = isMabinti ? ''     : 'none';
+    }
+
     function applyFeedbackTypeVisibility(type) {
-        const isCompliment = (type === 'compliment');
+        const isCompliment  = (type === 'compliment');
+        const isMabinti     = isMabintiComplimentMode();
 
         if (isCompliment) {
-            nonComplimentBlock.style.display = 'none';
+            if (nonComplimentBlock) nonComplimentBlock.style.display = 'none';
             if (overallExperienceField) overallExperienceField.required = false;
         } else {
-            nonComplimentBlock.style.display = '';
+            if (nonComplimentBlock) nonComplimentBlock.style.display = '';
             if (overallExperienceField) overallExperienceField.required = true;
         }
+
+        if (isMabinti) {
+            if (mabintiComplimentFields)   mabintiComplimentFields.style.display   = '';
+            if (standardExperienceFields)  standardExperienceFields.style.display  = 'none';
+            if (standardMessageField)      standardMessageField.style.display      = 'none';
+            if (overallExperienceField)    overallExperienceField.required         = false;
+        } else {
+            if (mabintiComplimentFields)   mabintiComplimentFields.style.display   = 'none';
+            if (standardExperienceFields)  standardExperienceFields.style.display  = '';
+            if (standardMessageField)      standardMessageField.style.display      = '';
+        }
+
+        applyQ3Visibility();
     }
 
     feedbackTypeRadios.forEach(function(radio) {
@@ -631,6 +753,16 @@
         applyFeedbackTypeVisibility(checked ? checked.value : '');
     })();
 
+    // Re-apply when location changes (Mabinti mode depends on both)
+    (function() {
+        const locEl = document.getElementById('location');
+        if (!locEl) return;
+        locEl.addEventListener('change', function() {
+            const checked = document.querySelector('input[name="feedback_type"]:checked');
+            applyFeedbackTypeVisibility(checked ? checked.value : '');
+        });
+    })();
+
     // ── Location-aware service panel swap ────────────────────────
     (function () {
         const locationMap = @json($locationServiceMap ?? []);
@@ -673,7 +805,10 @@
             }
         }
 
-        locationSelect.addEventListener('change', onLocationChange);
+        locationSelect.addEventListener('change', function() {
+            onLocationChange();
+            syncOtherTextInput();
+        });
 
         // Restore on page load if old location was set
         const oldLocation = locationSelect.value;
@@ -686,6 +821,35 @@
                 if (cb) cb.checked = true;
             });
         }
+    })();
+
+    // ── Other service unit text input toggle ─────────────────────
+    (function () {
+        const otherWrap = document.getElementById('service-unit-other-wrap');
+        const otherText = document.getElementById('service_unit_other_text');
+        const panel     = document.getElementById('service-units-panel');
+        if (!otherWrap || !panel) return;
+
+        function syncOtherWrap() {
+            const otherCb = panel.querySelector('input[value="other"]');
+            const checked = otherCb && otherCb.checked;
+            otherWrap.style.display = checked ? '' : 'none';
+            if (!checked && otherText) otherText.value = '';
+        }
+
+        panel.addEventListener('change', function (e) {
+            if (e.target && e.target.value === 'other') syncOtherWrap();
+        });
+
+        // Expose for location-change hook
+        window.syncOtherTextInput = syncOtherWrap;
+
+        // Initial state
+        syncOtherWrap();
+        @if(old('service_unit_other_text'))
+            const otherCbInit = panel.querySelector('input[value="other"]');
+            if (otherCbInit) { otherCbInit.checked = true; syncOtherWrap(); }
+        @endif
     })();
 </script>
 @endpush

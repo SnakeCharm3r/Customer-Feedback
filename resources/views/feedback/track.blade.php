@@ -80,8 +80,9 @@
                 <div class="card card-ccbrt">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>{{ __('portal.feedback_track.details_title') }}</h5>
-                        <span class="badge bg-{{ $feedback->status == 'new' ? 'primary' : ($feedback->status == 'responded' ? 'info' : 'secondary') }} fs-6">
-                            {{ $feedback->getStatusLabel() }}
+                        @php $st = $feedback->status; @endphp
+                        <span class="badge bg-{{ $st === 'new' ? 'primary' : ($st === 'responded' ? 'info' : 'secondary') }} fs-6">
+                            {{ $feedback->status_label }}
                         </span>
                     </div>
                     <div class="card-body">
@@ -94,30 +95,95 @@
                         <!-- Status Timeline -->
                         <h6 class="mb-3 mt-4" style="color: var(--ccbrt-navy);">{{ __('portal.feedback_track.status_timeline_title') }}</h6>
                         <div class="status-timeline mb-4">
-                            <div class="status-step {{ in_array($feedback->status, ['new', 'responded', 'closed']) ? 'completed' : '' }}
-                                        {{ $feedback->status == 'new' ? 'active' : '' }}">
-                                <div class="status-dot">
-                                    <i class="bi bi-inbox"></i>
-                                </div>
+                            <div class="status-step {{ in_array($st, ['new','responded','closed']) ? 'completed' : '' }} {{ $st === 'new' ? 'active' : '' }}">
+                                <div class="status-dot"><i class="bi bi-inbox"></i></div>
                                 <div class="status-label">{{ __('portal.options.statuses.new') }}</div>
                             </div>
-                            <div class="status-step {{ in_array($feedback->status, ['responded', 'closed']) ? 'completed' : '' }}
-                                        {{ $feedback->status == 'responded' ? 'active' : '' }}">
-                                <div class="status-dot">
-                                    <i class="bi bi-chat-left-text"></i>
-                                </div>
+                            <div class="status-step {{ in_array($st, ['responded','closed']) ? 'completed' : '' }} {{ $st === 'responded' ? 'active' : '' }}">
+                                <div class="status-dot"><i class="bi bi-chat-left-text"></i></div>
                                 <div class="status-label">{{ __('portal.options.statuses.responded') }}</div>
                             </div>
-                            <div class="status-step {{ $feedback->status == 'closed' ? 'completed' : '' }}
-                                        {{ $feedback->status == 'closed' ? 'active' : '' }}">
-                                <div class="status-dot">
-                                    <i class="bi bi-check-lg"></i>
-                                </div>
+                            <div class="status-step {{ $st === 'closed' ? 'completed active' : '' }}">
+                                <div class="status-dot"><i class="bi bi-check-lg"></i></div>
                                 <div class="status-label">{{ __('portal.options.statuses.closed') }}</div>
                             </div>
                         </div>
 
-                        <!-- Feedback Details -->
+                        @if($feedback->is_mabinti)
+                        {{-- ── Mabinti Centre panel ── --}}
+                        <div class="mb-4 p-3 rounded-3" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <span style="width:32px;height:32px;border-radius:8px;background:#dcfce7;display:inline-flex;align-items:center;justify-content:center;"><i class="bi bi-shop" style="color:#15803d;"></i></span>
+                                <strong style="color:#14532d;">Mabinti Centre &mdash; {{ $feedback->feedback_type_label }}</strong>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-sm-6">
+                                    <small class="text-muted d-block">Submitted On</small>
+                                    <p class="mb-0 fw-medium">{{ $feedback->created_at->format('F j, Y \a\t g:i A') }}</p>
+                                </div>
+                                <div class="col-sm-6">
+                                    <small class="text-muted d-block">Feedback Type</small>
+                                    <p class="mb-0 fw-medium">{{ $feedback->feedback_type_label }}</p>
+                                </div>
+                                @if($feedback->patient_name)
+                                <div class="col-sm-6">
+                                    <small class="text-muted d-block">Name</small>
+                                    <p class="mb-0 fw-medium">{{ $feedback->patient_name }}</p>
+                                </div>
+                                @endif
+                                @if($feedback->organization_name)
+                                <div class="col-sm-6">
+                                    <small class="text-muted d-block">Organisation / Company</small>
+                                    <p class="mb-0 fw-medium">{{ $feedback->organization_name }}</p>
+                                </div>
+                                @endif
+                                @if($feedback->submitter_location_text)
+                                <div class="col-sm-6">
+                                    <small class="text-muted d-block">From / Location</small>
+                                    <p class="mb-0 fw-medium">{{ $feedback->submitter_location_text }}</p>
+                                </div>
+                                @endif
+                                @if($feedback->service_units_summary)
+                                <div class="col-sm-6">
+                                    <small class="text-muted d-block">Product / Service</small>
+                                    <p class="mb-0 fw-medium">{{ $feedback->service_units_summary }}{{ $feedback->service_unit_other_text ? ' — Other: ' . $feedback->service_unit_other_text : '' }}</p>
+                                </div>
+                                @endif
+                                @if($feedback->service_rating_label)
+                                <div class="col-sm-6">
+                                    <small class="text-muted d-block">Service Rating</small>
+                                    <p class="mb-0 fw-medium">{{ $feedback->service_rating_label }}</p>
+                                </div>
+                                @endif
+                                @if($feedback->visit_date)
+                                <div class="col-sm-6">
+                                    <small class="text-muted d-block">Date of Visit</small>
+                                    <p class="mb-0 fw-medium">{{ $feedback->visit_date->format('F j, Y') }}</p>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if($feedback->overall_experience || $feedback->message)
+                        <h6 class="mb-3" style="color: var(--ccbrt-navy); border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem;">
+                            Overall Experience
+                        </h6>
+                        <div class="p-3 rounded-3 mb-4" style="background-color: #f8f9fa;">
+                            <p class="mb-0">{{ $feedback->overall_experience ?: $feedback->message }}</p>
+                        </div>
+                        @endif
+
+                        @if($feedback->message && $feedback->overall_experience && $feedback->message !== $feedback->overall_experience)
+                        <h6 class="mb-3" style="color: var(--ccbrt-navy); border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem;">
+                            {{ __('portal.feedback_track.additional_comments') }}
+                        </h6>
+                        <div class="p-3 rounded-3 mb-4" style="background-color: #f8f9fa;">
+                            <p class="mb-0">{{ $feedback->message }}</p>
+                        </div>
+                        @endif
+
+                        @else
+                        {{-- ── Standard CCBRT panel ── --}}
                         <h6 class="mb-3" style="color: var(--ccbrt-navy); border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem;">
                             {{ __('portal.feedback_track.submission_info') }}
                         </h6>
@@ -128,28 +194,28 @@
                             </div>
                             <div class="col-md-6 mb-2">
                                 <small class="text-muted">{{ __('portal.feedback_track.service_category') }}</small>
-                                <p class="mb-0 fw-medium">{{ $feedback->getServiceCategoryLabel() }}</p>
+                                <p class="mb-0 fw-medium">{{ $feedback->service_category_label }}</p>
                             </div>
                             <div class="col-md-6 mb-2">
                                 <small class="text-muted">{{ __('portal.feedback_track.feedback_type') }}</small>
-                                <p class="mb-0 fw-medium">{{ $feedback->getFeedbackTypeLabel() }}</p>
+                                <p class="mb-0 fw-medium">{{ $feedback->feedback_type_label }}</p>
                             </div>
                             @if($feedback->service_units_summary)
                             <div class="col-md-6 mb-2">
                                 <small class="text-muted">{{ __('portal.feedback_track.service_offered') }}</small>
-                                <p class="mb-0 fw-medium">{{ $feedback->service_units_summary }}</p>
+                                <p class="mb-0 fw-medium">{{ $feedback->service_units_summary }}{{ $feedback->service_unit_other_text ? ' — Other: ' . $feedback->service_unit_other_text : '' }}</p>
                             </div>
                             @endif
-                            @if($feedback->service_rating)
+                            @if($feedback->service_rating_label)
                             <div class="col-md-6 mb-2">
                                 <small class="text-muted">{{ __('portal.feedback_track.service_rating') }}</small>
-                                <p class="mb-0 fw-medium">{{ $feedback->getServiceRatingLabel() }}</p>
+                                <p class="mb-0 fw-medium">{{ $feedback->service_rating_label }}</p>
                             </div>
                             @endif
                             @if(!is_null($feedback->confidentiality_respected))
                             <div class="col-md-6 mb-2">
                                 <small class="text-muted">{{ __('portal.feedback_track.confidentiality_kept') }}</small>
-                                <p class="mb-0 fw-medium">{{ $feedback->getConfidentialityLabel() }}</p>
+                                <p class="mb-0 fw-medium">{{ $feedback->confidentiality_label }}</p>
                             </div>
                             @endif
                             @if($feedback->visit_date)
@@ -166,6 +232,7 @@
                         <div class="p-3 rounded-3 mb-4" style="background-color: #f8f9fa;">
                             <p class="mb-0">{{ $feedback->overall_experience ?: $feedback->message }}</p>
                         </div>
+                        @endif
 
                         @if($feedback->improvement_suggestion)
                         <h6 class="mb-3" style="color: var(--ccbrt-navy); border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem;">
@@ -185,26 +252,26 @@
                         </div>
                         @endif
 
+                        @if(!$feedback->is_mabinti && $feedback->message)
                         <h6 class="mb-3" style="color: var(--ccbrt-navy); border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem;">
                             {{ __('portal.feedback_track.additional_comments') }}
                         </h6>
                         <div class="p-3 rounded-3 mb-4" style="background-color: #f8f9fa;">
                             <p class="mb-0">{{ $feedback->message ?: __('portal.feedback_track.no_additional_comments') }}</p>
                         </div>
+                        @endif
 
-                        <!-- Public Response (if available) -->
-                        @if($publicResponse)
+                        <!-- QA Response -->
+                        @if($feedback->public_response_content)
                         <h6 class="mb-3" style="color: var(--ccbrt-teal); border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem;">
                             <i class="bi bi-reply me-2"></i>{{ __('portal.feedback_track.response_title') }}
                         </h6>
                         <div class="p-3 rounded-3 mb-4" style="background-color: #e8f5e9; border-left: 4px solid var(--ccbrt-teal);">
                             <div class="d-flex justify-content-between mb-2">
-                                <small class="text-muted">
-                                    <i class="bi bi-person-circle me-1"></i>{{ __('portal.common.quality_assurance_team') }}
-                                </small>
-                                <small class="text-muted">{{ $publicResponse->created_at->format('F j, Y') }}</small>
+                                <small class="text-muted"><i class="bi bi-person-circle me-1"></i>{{ __('portal.common.quality_assurance_team') }}</small>
+                                <small class="text-muted">{{ $feedback->public_response_date?->format('F j, Y') }}</small>
                             </div>
-                            <p class="mb-0">{{ $publicResponse->content }}</p>
+                            <p class="mb-0">{{ $feedback->public_response_content }}</p>
                         </div>
                         @else
                         <div class="alert alert-info">

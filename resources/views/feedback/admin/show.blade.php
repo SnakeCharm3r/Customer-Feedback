@@ -66,7 +66,15 @@
                     </div>
                     <div class="col-sm-6 col-md-3">
                         <p class="text-muted small text-uppercase mb-1">Location</p>
-                        <p class="fw-semibold mb-0">{{ \App\Models\Feedback::LOCATIONS[$feedback->location] ?? '—' }}</p>
+                        @php
+                            $locLabel = \App\Models\Feedback::getLocations(false)[$feedback->location] ?? (\App\Models\Feedback::LOCATIONS[$feedback->location] ?? '—');
+                        @endphp
+                        <p class="fw-semibold mb-0">
+                            @if($feedback->isMabinti())
+                                <span class="badge bg-success-subtle text-success me-1"><i class="bi bi-shop"></i></span>
+                            @endif
+                            {{ $locLabel }}
+                        </p>
                     </div>
                     <div class="col-sm-6 col-md-3">
                         <p class="text-muted small text-uppercase mb-1">Category</p>
@@ -95,13 +103,48 @@
                     </div>
                 </div>
 
+                @if($feedback->isMabinti())
+                    <div class="mb-4 p-3 rounded-3" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+                        <p class="text-muted small text-uppercase mb-2" style="color:#14532d !important;"><i class="bi bi-shop me-1"></i>Mabinti Centre — Submitter Details</p>
+                        <div class="row g-2">
+                            @if($feedback->patient_name)
+                            <div class="col-sm-6 col-md-3">
+                                <p class="text-muted small mb-1">Full Name</p>
+                                <p class="fw-semibold mb-0">{{ $feedback->patient_name }}</p>
+                            </div>
+                            @endif
+                            @if($feedback->organization_name)
+                            <div class="col-sm-6 col-md-3">
+                                <p class="text-muted small mb-1">Organisation / Company</p>
+                                <p class="fw-semibold mb-0">{{ $feedback->organization_name }}</p>
+                            </div>
+                            @endif
+                            @if($feedback->submitter_location_text)
+                            <div class="col-sm-6 col-md-3">
+                                <p class="text-muted small mb-1">From / Location</p>
+                                <p class="fw-semibold mb-0">{{ $feedback->submitter_location_text }}</p>
+                            </div>
+                            @endif
+                            @if($feedback->service_rating)
+                            <div class="col-sm-6 col-md-3">
+                                <p class="text-muted small mb-1">Service Rating</p>
+                                <p class="fw-semibold mb-0">{{ $feedback->getServiceRatingLabel() }}</p>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
                 @if($feedback->service_units_summary)
                     <div class="mb-4">
                         <p class="text-muted small text-uppercase mb-2">Service Offered Today</p>
-                        <div class="d-flex flex-wrap gap-2">
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
                             @foreach($feedback->service_units_labels as $serviceUnitLabel)
                                 <span class="badge bg-primary-subtle text-primary">{{ $serviceUnitLabel }}</span>
                             @endforeach
+                            @if($feedback->service_unit_other_text)
+                                <span class="badge bg-secondary-subtle text-secondary">Other: {{ $feedback->service_unit_other_text }}</span>
+                            @endif
                         </div>
                     </div>
                 @endif
@@ -122,13 +165,42 @@
                     </div>
                 @endif
 
-                @if($feedback->confidentiality_comment)
+                @if($feedback->isMabinti())
+                    @if(!is_null($feedback->product_satisfied))
                     <div class="mb-4">
-                        <p class="text-muted small text-uppercase mb-2">Confidentiality Explanation</p>
+                        <p class="text-muted small text-uppercase mb-2"><i class="bi bi-shop me-1 text-success"></i>Product Satisfaction — Delivery &amp; Quality / Colour</p>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            @if($feedback->product_satisfied)
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Satisfied</span>
+                            @else
+                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Not Satisfied</span>
+                            @endif
+                        </div>
+                        @if($feedback->product_satisfaction_comment)
+                        <div class="feedback-field-box feedback-field-warning">
+                            <p class="mb-0" style="white-space:pre-wrap;">{{ $feedback->product_satisfaction_comment }}</p>
+                        </div>
+                        @endif
+                    </div>
+                    @endif
+                @else
+                    @if(!is_null($feedback->confidentiality_respected))
+                    <div class="mb-4">
+                        <p class="text-muted small text-uppercase mb-2">Confidentiality</p>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            @if($feedback->confidentiality_respected)
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Kept</span>
+                            @else
+                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Not Kept</span>
+                            @endif
+                        </div>
+                        @if($feedback->confidentiality_comment)
                         <div class="feedback-field-box feedback-field-warning">
                             <p class="mb-0" style="white-space:pre-wrap;">{{ $feedback->confidentiality_comment }}</p>
                         </div>
+                        @endif
                     </div>
+                    @endif
                 @endif
 
                 <div class="mb-0">

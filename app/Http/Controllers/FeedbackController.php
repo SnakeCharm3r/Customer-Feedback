@@ -40,8 +40,16 @@ class FeedbackController extends Controller
      */
     public function store(Request $request)
     {
+        $isMabintiCompliment = $request->input('location') === 'mabinti'
+            && $request->input('feedback_type') === 'compliment';
+
         $validated = $request->validate([
             'patient_name' => 'nullable|string|max:255',
+            'organization_name' => 'nullable|string|max:255',
+            'submitter_location_text' => 'nullable|string|max:255',
+            'service_unit_other_text' => 'nullable|string|max:255',
+            'product_satisfied' => 'nullable|in:1,0',
+            'product_satisfaction_comment' => 'nullable|string|max:1000',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20|required_if:is_urgent,1',
             'service_units' => 'nullable|array',
@@ -61,7 +69,7 @@ class FeedbackController extends Controller
             'confidentiality_comment' => 'nullable|string|max:1000|required_if:confidentiality_respected,0',
             'visit_date' => 'nullable|date',
             'location' => 'nullable|in:' . implode(',', array_keys(\App\Models\Feedback::getLocations(false))),
-            'overall_experience' => 'required_unless:feedback_type,compliment|nullable|string|min:10',
+            'overall_experience' => ($isMabintiCompliment ? 'nullable' : 'required_unless:feedback_type,compliment') . '|nullable|string|min:10',
             'improvement_suggestion' => 'nullable|string|max:2000',
             'message' => 'nullable|string|max:2000',
             'is_urgent' => 'boolean',
@@ -96,6 +104,11 @@ class FeedbackController extends Controller
         $feedback = Feedback::create([
             'reference_no' => $referenceNo,
             'patient_name' => $validated['patient_name'],
+            'organization_name' => $validated['organization_name'] ?? null,
+            'submitter_location_text' => $validated['submitter_location_text'] ?? null,
+            'service_unit_other_text' => $validated['service_unit_other_text'] ?? null,
+            'product_satisfied' => isset($validated['product_satisfied']) ? (int) $validated['product_satisfied'] : null,
+            'product_satisfaction_comment' => $validated['product_satisfaction_comment'] ?? null,
             'email' => $validated['email'],
             'phone' => $validated['phone'],
             'service_units'   => $serviceUnits,
@@ -157,7 +170,11 @@ class FeedbackController extends Controller
 
         $publicResponse = $feedback->getPublicResponse();
 
-        return view('feedback.track', compact('feedback', 'publicResponse', 'lookup'));
+        return view('feedback.track', [
+            'feedback'       => $this->buildTrackData($feedback, $publicResponse),
+            'publicResponse' => null, // already embedded in buildTrackData
+            'lookup'         => $lookup,
+        ]);
     }
 
     /**
@@ -177,7 +194,65 @@ class FeedbackController extends Controller
 
         $publicResponse = $feedback->getPublicResponse();
 
-        return view('feedback.track', compact('feedback', 'publicResponse'));
+        return view('feedback.track', [
+            'feedback'       => $this->buildTrackData($feedback, $publicResponse),
+            'publicResponse' => null,
+        ]);
+    }
+
+    /**
+     * Build a safe read-only data object for the public tracking view.
+     * Never exposes internal fields (IDs, attachment paths, emails, phones,
+     * reviewer info, IP addresses, etc.).
+     */
+    private function buildTrackData(Feedback $f, $publicResponse): object
+    {
+        return (object) [
+            // Identity
+            'reference_no'       => $f->reference_no,
+            'status'             => $f->status,
+            'status_label'       => $f->getStatusLabel(),
+            'created_at'         => $f->created_at,
+            'visit_date'         => $f->visit_date,
+
+            // Submitter (only what was voluntarily provided)
+            'patient_name'           => $f->patient_name,
+            'organization_name'      => $f->organization_name,
+            'submitter_location_text'=> $f->submitter_location_text,
+
+            // Location / type
+            'is_mabinti'         => $f->isMabinti(),
+            'location_label'     => \App\Models\Feedback::getLocations(false)[$f->location]
+                                        ?? (\App\Models\Feedback::LOCATIONS[$f->location] ?? null),
+            'feedback_type'      => $f->feedback_type,
+            'feedback_type_label'=> $f->getFeedbackTypeLabel(),
+            'service_category_label' => $f->getServiceCategoryLabel(),
+
+            // Service
+            'service_units_summary'  => $f->service_units_summary,
+            'service_unit_other_text'=> $f->service_unit_other_text,
+            'service_rating'         => $f->service_rating,
+            'service_rating_label'   => $f->service_rating ? $f->getServiceRatingLabel() : null,
+
+            // Q3 — context-dependent
+            'confidentiality_respected' => $f->isMabinti() ? null : $f->confidentiality_respected,
+            'confidentiality_label'     => $f->isMabinti() ? null : $f->getConfidentialityLabel(),
+            'confidentiality_comment'   => $f->isMabinti() ? null : $f->confidentiality_comment,
+            'product_satisfied'         => $f->isMabinti() ? $f->product_satisfied : null,
+            'product_satisfaction_comment' => $f->isMabinti() ? $f->product_satisfaction_comment : null,
+
+            // Feedback text
+            'overall_experience'    => $f->overall_experience,
+            'improvement_suggestion'=> $f->improvement_suggestion,
+            'message'               => $f->message,
+
+            // Urgency flag (no internal data)
+            'is_urgent'             => (bool) $f->is_urgent,
+
+            // Public QA response
+            'public_response_content'  => $publicResponse?->content,
+            'public_response_date'     => $publicResponse?->created_at,
+        ];
     }
 
     private function findFeedbackForTracking(string $lookup): ?Feedback
