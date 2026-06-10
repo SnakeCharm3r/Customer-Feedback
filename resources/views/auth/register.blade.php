@@ -34,6 +34,9 @@
 
         <form method="POST" action="{{ route('register') }}">
             @csrf
+            @if(request('token'))
+                <input type="hidden" name="invite_token" value="{{ request('token') }}">
+            @endif
 
             {{-- PERSONAL INFORMATION --}}
             <div class="section-divider">Personal Information</div>

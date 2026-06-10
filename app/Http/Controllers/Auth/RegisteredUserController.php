@@ -17,18 +17,40 @@ class RegisteredUserController extends Controller
 {
     /**
      * Display the registration view.
+     * Requires a valid token to access (sent via direct link only).
      */
-    public function create(): View
+    public function create(Request $request): View
     {
         // Check if this is the first user registration
         $isFirstUser = !User::hasUsers();
-        
+
+        // First user can register without token (initial setup)
+        // Subsequent registrations require a valid token
+        if (!$isFirstUser) {
+            $token = $request->query('token');
+            $validToken = hash_hmac('sha256', config('app.key') . date('Y-m-d'), config('app.key'));
+
+            if (!$token || !hash_equals($validToken, $token)) {
+                abort(403, 'Registration is by invitation only. Please contact your administrator.');
+            }
+        }
+
         return view('auth.register', compact('isFirstUser'));
     }
 
     public function complete(): View
     {
         return view('auth.register-complete');
+    }
+
+    /**
+     * Generate an invitation link with a valid token.
+     * This can be used by admins to invite new users.
+     */
+    public static function generateInvitationLink(): string
+    {
+        $token = hash_hmac('sha256', config('app.key') . date('Y-m-d'), config('app.key'));
+        return route('register', ['token' => $token]);
     }
 
     /**
@@ -39,7 +61,16 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $isFirstUser = !User::hasUsers();
-        
+
+        // Validate token for non-first user registrations
+        if (!$isFirstUser) {
+            $validToken = hash_hmac('sha256', config('app.key') . date('Y-m-d'), config('app.key'));
+
+            if (!$request->has('invite_token') || !hash_equals($validToken, $request->input('invite_token'))) {
+                abort(403, 'Invalid or expired invitation.');
+            }
+        }
+
         $rules = [
             'fname' => ['required', 'string', 'max:255'],
             'mname' => ['nullable', 'string', 'max:255'],

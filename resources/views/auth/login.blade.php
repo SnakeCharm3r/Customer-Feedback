@@ -110,6 +110,18 @@
                     <i class="bi bi-arrow-left me-1"></i>Back to public portal
                 </a>
             </div>
+
+            @if (!\App\Models\User::hasUsers())
+                <div class="alert alert-info mt-4 py-2 px-3 small text-center">
+                    <i class="bi bi-shield-check me-2"></i>
+                    <strong>Initial Setup:</strong> <a href="{{ route('register') }}" class="alert-link">Create administrator account</a>
+                </div>
+            @else
+                <div class="text-center mt-4 small text-muted">
+                    <i class="bi bi-lock me-1"></i>
+                    Registration is by invitation only. Contact your administrator for access.
+                </div>
+            @endif
         </div>
 
     </div>
