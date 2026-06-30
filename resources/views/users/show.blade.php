@@ -91,9 +91,12 @@
         @endif
 
         @if(!$user->is_first_user && auth()->user()->canManageUsers())
-        <div class="card">
-            <div class="card-header">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0"><i class="bi bi-shield-lock me-2"></i>Admin Actions</h5>
+                <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-pencil me-1"></i>Edit User
+                </a>
             </div>
             <div class="card-body">
 

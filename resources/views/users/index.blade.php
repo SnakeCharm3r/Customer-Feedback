@@ -448,16 +448,20 @@
                         </td>
                         <td class="text-end pe-3 py-3">
                             <div class="users-actions">
-                                <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-primary me-1">
-                                    <i class="bi bi-eye me-1"></i>View
+                                <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-primary" title="View user details">
+                                    <i class="bi bi-eye"></i>
                                 </a>
                                 @if(!$user->is_first_user && $user->id !== $authUser->id && $authUser->canManageUsers())
                                     @if($user->is_active)
+                                    <button type="button" class="btn btn-sm btn-success" onclick="sendInvitation({{ $user->id }}, '{{ addslashes($user->getFullName()) }}', '{{ addslashes($user->email) }}')" title="Send invitation to set password">
+                                        <i class="bi bi-send"></i>
+                                    </button>
                                     <form method="POST" action="{{ route('users.deactivate', $user) }}" class="d-inline">
                                         @csrf
                                         <button type="submit"
                                             onclick="return confirm('Deactivate {{ addslashes($user->getFullName()) }}?')"
-                                            class="btn btn-sm btn-outline-danger">
+                                            class="btn btn-sm btn-outline-danger"
+                                            title="Deactivate user">
                                             <i class="bi bi-person-x"></i>
                                         </button>
                                     </form>
@@ -499,5 +503,95 @@
     </div>
     @endif
 </div>
+
+{{-- Toast Container --}}
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div id="inviteToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="bi bi-envelope me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">Invitation</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Message here
+        </div>
+    </div>
+</div>
+
+<script>
+function sendInvitation(userId, userName, email) {
+    console.log('sendInvitation called with:', { userId, userName, email });
+
+    if (!confirm(`Send invitation email to ${userName} (${email})? This will allow them to set their password.`)) {
+        return;
+    }
+
+    const btn = event.target.closest('button');
+    const originalIcon = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    console.log('CSRF Token:', csrfToken ? 'Found' : 'Not found');
+
+    fetch(`/users/${userId}/password-reset`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            showToast('success', 'Invitation Sent', data.message);
+        } else {
+            showToast('error', 'Error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error sending invitation:', error);
+        showToast('error', 'Error', 'Failed to send invitation. Please try again.');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalIcon;
+    });
+}
+
+function showToast(type, title, message) {
+    const toast = document.getElementById('inviteToast');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastTitle = document.getElementById('toastTitle');
+    const toastMessage = document.getElementById('toastMessage');
+
+    toastTitle.textContent = title;
+    toastMessage.textContent = message;
+
+    toast.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-warning');
+    toastIcon.classList.remove('bi-check-circle', 'bi-exclamation-circle', 'bi-info-circle');
+
+    if (type === 'success') {
+        toast.classList.add('text-bg-success');
+        toastIcon.classList.add('bi-check-circle');
+    } else if (type === 'error') {
+        toast.classList.add('text-bg-danger');
+        toastIcon.classList.add('bi-exclamation-circle');
+    } else {
+        toast.classList.add('text-bg-warning');
+        toastIcon.classList.add('bi-info-circle');
+    }
+
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+</script>
 
 @endsection

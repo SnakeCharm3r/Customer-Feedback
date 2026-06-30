@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Auth\Notifications\ResetPassword as ResetPasswordNotification;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -80,6 +81,7 @@ class User extends Authenticatable
         'is_first_user',
         'approved_by',
         'approved_at',
+        'department_id',
     ];
 
     /**
@@ -218,5 +220,13 @@ class User extends Authenticatable
     public static function getFirstUser(): ?self
     {
         return self::where('is_first_user', true)->first();
+    }
+
+    /**
+     * Send the password reset notification using custom invitation mail
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        \Illuminate\Support\Facades\Mail::to($this->email)->send(new \App\Mail\InvitationMail($this, $token));
     }
 }
