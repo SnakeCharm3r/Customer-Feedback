@@ -52,7 +52,7 @@
         .button {
             display: inline-block;
             background-color: #0b6b2c;
-            color: white;
+            color: #ffffff !important;
             padding: 15px 30px;
             text-decoration: none;
             border-radius: 5px;
@@ -61,6 +61,7 @@
         }
         .button:hover {
             background-color: #065321;
+            color: #ffffff !important;
         }
         .footer {
             background-color: #f8f9fa;
@@ -97,7 +98,7 @@
             </p>
             
             <div class="button-container">
-                <a href="{{ $resetUrl }}" class="button">Set Your Password</a>
+                <a href="{{ $resetUrl }}" class="button" style="color: #ffffff !important; text-decoration: none;">Set Your Password</a>
             </div>
             
             <div class="note">
