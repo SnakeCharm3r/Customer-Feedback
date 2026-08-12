@@ -34,9 +34,9 @@
                     <div class="section-divider">Patient Information</div>
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label for="patient_name" class="form-label small fw-semibold">Patient Name <span class="text-danger">*</span></label>
+                            <label for="patient_name" class="form-label small fw-semibold">Patient Name <span class="text-muted fw-normal">(Optional)</span></label>
                             <input type="text" id="patient_name" name="patient_name" value="{{ old('patient_name') }}"
-                                   class="form-control @error('patient_name') is-invalid @enderror" required>
+                                   class="form-control @error('patient_name') is-invalid @enderror">
                             @error('patient_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">

@@ -1,197 +1,214 @@
-@php $sidebarUser = auth()->user(); @endphp
-<div class="app-menu navbar-menu">
-    <!-- LOGO -->
-    <div class="navbar-brand-box">
-        <a href="{{ route('dashboard') }}" class="logo logo-dark admin-brand-link">
+@php
+    $sidebarUser = auth()->user();
+    $sidebarNewCount = $sidebarUser?->canManageComplaints()
+        ? \App\Models\Feedback::where('status', 'new')->count()
+        : 0;
+    $sidebarPendingUsers = $sidebarUser?->canManageUsers()
+        ? \App\Models\User::where('is_active', false)->where('is_first_user', false)->count()
+        : 0;
+    $sidebarPendingEscalations = $sidebarUser?->canManageComplaints()
+        ? \App\Models\Escalation::where('status', 'pending')->count()
+        : 0;
+    $sidebarName = $sidebarUser?->getFullName() ?: $sidebarUser?->name ?: 'Account';
+    $sidebarInitials = collect(preg_split('/\s+/', trim($sidebarName)))
+        ->filter()
+        ->take(2)
+        ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))
+        ->implode('');
+@endphp
+
+<div class="app-menu navbar-menu ccbrt-sidebar">
+    <div class="navbar-brand-box ccbrt-sidebar-brand">
+        <a href="{{ route('dashboard') }}" class="logo logo-dark admin-brand-link" aria-label="Open dashboard">
             <span class="admin-brand-shell">
                 <span class="admin-brand-icon-circle">
-                    <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo" class="admin-brand-logo admin-brand-logo-lg">
+                    <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}"
+                        alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo"
+                        class="admin-brand-logo admin-brand-logo-lg">
                 </span>
                 <span class="admin-brand-text sidebar-brand-copy" style="color:#065321;">
                     <span class="admin-brand-title">{{ $systemSettings?->organization_name ?? 'CCBRT' }}</span>
                     <span class="admin-brand-subtitle">{{ $systemSettings?->portal_name ?? 'Feedback System' }}</span>
                 </span>
             </span>
-         </a>
-        <a href="{{ route('dashboard') }}" class="logo logo-light admin-brand-link">
+        </a>
+        <a href="{{ route('dashboard') }}" class="logo logo-light admin-brand-link" aria-label="Open dashboard">
             <span class="admin-brand-shell">
                 <span class="admin-brand-icon-circle">
-                    <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}" alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo" class="admin-brand-logo admin-brand-logo-lg">
+                    <img src="{{ $systemSettings?->logoUrl() ?? asset('assets/images/ccbrt-logo.svg') }}"
+                        alt="{{ $systemSettings?->organization_name ?? 'CCBRT' }} Logo"
+                        class="admin-brand-logo admin-brand-logo-lg">
                 </span>
                 <span class="admin-brand-text text-white sidebar-brand-copy">
                     <span class="admin-brand-title">{{ $systemSettings?->organization_name ?? 'CCBRT' }}</span>
                     <span class="admin-brand-subtitle">{{ $systemSettings?->portal_name ?? 'Feedback System' }}</span>
                 </span>
             </span>
-         </a>
-        <button type="button" class="btn btn-sm p-0 fs-3xl header-item float-end btn-vertical-sm-hover"
-            id="vertical-hover">
-            <i class="ri-record-circle-line"></i>
+        </a>
+        <button type="button" class="btn btn-sm p-0 header-item btn-vertical-sm-hover ccbrt-sidebar-collapse"
+            id="vertical-hover" aria-label="Toggle compact sidebar" title="Toggle compact sidebar">
+            <i class="bi bi-layout-sidebar-inset"></i>
         </button>
     </div>
 
     <div id="scrollbar">
-        <div class="container-fluid">
+        <div class="container-fluid ccbrt-sidebar-content">
+            <div class="ccbrt-workspace-card sidebar-expand-copy" aria-label="Current workspace">
+                <span class="ccbrt-workspace-icon"><i class="bi bi-shield-check"></i></span>
+                <span class="ccbrt-workspace-copy">
+                    <strong>Quality Workspace</strong>
+                    <small>Feedback operations</small>
+                </span>
+                <span class="ccbrt-workspace-status" title="System available"></span>
+            </div>
+
             <div id="two-column-menu"></div>
-            <ul class="navbar-nav" id="navbar-nav">
+            <ul class="navbar-nav ccbrt-sidebar-nav" id="navbar-nav">
+                <li class="menu-title"><span>Overview</span></li>
 
-                <li class="menu-title"><span>Main</span></li>
-
-                <!-- Dashboard — visible to all -->
                 <li class="nav-item">
                     <a class="nav-link menu-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
-                        href="{{ route('dashboard') }}">
-                        <i class="bi bi-speedometer2"></i>
-                        <span>Dashboard</span>
+                        href="{{ route('dashboard') }}" @if(request()->routeIs('dashboard')) aria-current="page" @endif>
+                        <span class="sidebar-nav-icon"><i class="bi bi-grid-1x2"></i></span>
+                        <span class="sidebar-nav-label">Dashboard</span>
                     </a>
                 </li>
 
                 @if($sidebarUser)
+                    @if($sidebarUser->canManageComplaints())
+                        <li class="menu-title"><span>Feedback</span></li>
 
-                {{-- FEEDBACK MANAGEMENT — Quality Assurance Officer, Call Center, Quality Assurance HOD, Admin, COO --}}
-                @if($sidebarUser->canManageComplaints())
-                <li class="menu-title"><span>Feedback</span></li>
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('feedback.admin.*') && !request('status') ? 'active' : '' }}"
+                                href="{{ route('feedback.admin.index') }}">
+                                <span class="sidebar-nav-icon"><i class="bi bi-inbox"></i></span>
+                                <span class="sidebar-nav-label">All Submissions</span>
+                                @if($sidebarNewCount > 0)
+                                    <span class="sidebar-nav-count sidebar-nav-count-danger">{{ $sidebarNewCount }}</span>
+                                @endif
+                            </a>
+                        </li>
 
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('feedback.admin.*') ? 'active' : '' }}"
-                        href="{{ route('feedback.admin.index') }}">
-                        <i class="bi bi-chat-left-text"></i>
-                        <span>All Submissions</span>
-                        @php $newCount = \App\Models\Feedback::where('status','new')->count(); @endphp
-                        @if($newCount > 0)
-                            <span class="badge bg-danger ms-auto">{{ $newCount }}</span>
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('feedback.admin.index') && request('status') === 'under_review' ? 'active' : '' }}"
+                                href="{{ route('feedback.admin.index', ['status' => 'under_review']) }}">
+                                <span class="sidebar-nav-icon"><i class="bi bi-hourglass-split"></i></span>
+                                <span class="sidebar-nav-label">Under Review</span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('feedback.admin.index') && request('status') === 'responded' ? 'active' : '' }}"
+                                href="{{ route('feedback.admin.index', ['status' => 'responded']) }}">
+                                <span class="sidebar-nav-icon"><i class="bi bi-check2-circle"></i></span>
+                                <span class="sidebar-nav-label">Responded</span>
+                            </a>
+                        </li>
+                    @endif
+
+                    @if($sidebarUser->canViewWeeklyReport())
+                        <li class="menu-title"><span>Insights</span></li>
+
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('reports.analytics') ? 'active' : '' }}"
+                                href="{{ route('reports.analytics') }}" @if(request()->routeIs('reports.analytics')) aria-current="page" @endif>
+                                <span class="sidebar-nav-icon"><i class="bi bi-graph-up-arrow"></i></span>
+                                <span class="sidebar-nav-label">Analytics</span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('reports.feedback.index') ? 'active' : '' }}"
+                                href="{{ route('reports.feedback.index') }}" @if(request()->routeIs('reports.feedback.index')) aria-current="page" @endif>
+                                <span class="sidebar-nav-icon"><i class="bi bi-file-earmark-bar-graph"></i></span>
+                                <span class="sidebar-nav-label">Feedback Report</span>
+                            </a>
+                        </li>
+                    @endif
+
+                    @if($sidebarUser->canManageUsers())
+                        <li class="menu-title"><span>Administration</span></li>
+
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('users.index') ? 'active' : '' }}"
+                                href="{{ route('users.index') }}">
+                                <span class="sidebar-nav-icon"><i class="bi bi-people"></i></span>
+                                <span class="sidebar-nav-label">Manage Users</span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('users.pending') ? 'active' : '' }}"
+                                href="{{ route('users.pending') }}">
+                                <span class="sidebar-nav-icon"><i class="bi bi-person-check"></i></span>
+                                <span class="sidebar-nav-label">Pending Approvals</span>
+                                @if($sidebarPendingUsers > 0)
+                                    <span class="sidebar-nav-count sidebar-nav-count-warning">{{ $sidebarPendingUsers }}</span>
+                                @endif
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('hods.*') ? 'active' : '' }}"
+                                href="{{ route('hods.index') }}">
+                                <span class="sidebar-nav-icon"><i class="bi bi-diagram-3"></i></span>
+                                <span class="sidebar-nav-label">HOD Officers</span>
+                            </a>
+                        </li>
+
+                        @if($sidebarUser->isAdmin())
+                            <li class="nav-item">
+                                <a class="nav-link menu-link {{ request()->routeIs('departments.*') ? 'active' : '' }}"
+                                    href="{{ route('departments.index') }}">
+                                    <span class="sidebar-nav-icon"><i class="bi bi-buildings"></i></span>
+                                    <span class="sidebar-nav-label">Departments</span>
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link menu-link {{ request()->routeIs('settings.*') ? 'active' : '' }}"
+                                    href="{{ route('settings.edit') }}">
+                                    <span class="sidebar-nav-icon"><i class="bi bi-sliders"></i></span>
+                                    <span class="sidebar-nav-label">System Settings</span>
+                                </a>
+                            </li>
                         @endif
-                    </a>
-                </li>
+                    @endif
 
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('feedback.admin.index') && request('status') == 'under_review' ? 'active' : '' }}"
-                        href="{{ route('feedback.admin.index') }}?status=under_review">
-                        <i class="bi bi-hourglass-split"></i>
-                        <span>Under Review</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('feedback.admin.index') && request('status') == 'responded' ? 'active' : '' }}"
-                        href="{{ route('feedback.admin.index') }}?status=responded">
-                        <i class="bi bi-check2-circle"></i>
-                        <span>Responded</span>
-                    </a>
-                </li>
+                    @if($sidebarUser->canManageComplaints())
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('escalations.index') ? 'active' : '' }}"
+                                href="{{ route('escalations.index') }}">
+                                <span class="sidebar-nav-icon"><i class="bi bi-arrow-up-right-circle"></i></span>
+                                <span class="sidebar-nav-label">Escalation Matrix</span>
+                                @if($sidebarPendingEscalations > 0)
+                                    <span class="sidebar-nav-count sidebar-nav-count-warning">{{ $sidebarPendingEscalations }}</span>
+                                @endif
+                            </a>
+                        </li>
+                    @endif
                 @endif
-
-                {{-- REPORTS — all feedback management roles see Weekly; Admin/COO/Line Manager also see Feedback Report --}}
-                @if($sidebarUser->canViewWeeklyReport())
-                <li class="menu-title"><span>Reports</span></li>
-
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('reports.analytics') ? 'active' : '' }}"
-                        href="{{ route('reports.analytics') }}">
-                        <i class="bi bi-graph-up-arrow"></i>
-                        <span>Analytics</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('reports.feedback.index') ? 'active' : '' }}"
-                        href="{{ route('reports.feedback.index') }}">
-                        <i class="bi bi-bar-chart-line"></i>
-                        <span>Feedback Report</span>
-                    </a>
-                </li>
-                @endif
-
-                {{-- USER MANAGEMENT — Admin, Quality Assurance HOD --}}
-                @if($sidebarUser->canManageUsers())
-                <li class="menu-title"><span>Administration</span></li>
-
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('users.index') ? 'active' : '' }}"
-                        href="{{ route('users.index') }}">
-                        <i class="bi bi-people"></i>
-                        <span>Manage Users</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('users.pending') ? 'active' : '' }}"
-                        href="{{ route('users.pending') }}">
-                        <i class="bi bi-person-check"></i>
-                        <span>Pending Approvals</span>
-                        @php $pending = \App\Models\User::where('is_active', false)->where('is_first_user', false)->count(); @endphp
-                        @if($pending > 0)
-                            <span class="badge bg-warning text-dark ms-auto">{{ $pending }}</span>
-                        @endif
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('hods.*') ? 'active' : '' }}"
-                        href="{{ route('hods.index') }}">
-                        <i class="bi bi-diagram-3"></i>
-                        <span>HOD Officers</span>
-                    </a>
-                </li>
-
-                @if($sidebarUser->isAdmin())
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('departments.*') ? 'active' : '' }}"
-                        href="{{ route('departments.index') }}">
-                        <i class="bi bi-buildings"></i>
-                        <span>Departments</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('settings.*') ? 'active' : '' }}"
-                        href="{{ route('settings.edit') }}">
-                        <i class="bi bi-gear"></i>
-                        <span>System Settings</span>
-                    </a>
-                </li>
-                @endif
-                @endif
-
-                {{-- ESCALATION MATRIX — all feedback managers --}}
-                @if($sidebarUser->canManageComplaints())
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('escalations.index') ? 'active' : '' }}"
-                        href="{{ route('escalations.index') }}">
-                        <i class="bi bi-arrow-up-right-circle"></i>
-                        <span>Escalation Matrix</span>
-                        @php $pendingEsc = \App\Models\Escalation::where('status','pending')->count(); @endphp
-                        @if($pendingEsc > 0)
-                            <span class="badge ms-auto" style="background:#f59e0b; color:#fff;">{{ $pendingEsc }}</span>
-                        @endif
-                    </a>
-                </li>
-                @endif
-
-                @endif
-
-                <!-- Divider -->
-                <li class="menu-title mt-2"><span>Account</span></li>
-
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('profile.edit') ? 'active' : '' }}"
-                        href="{{ route('profile.edit') }}">
-                        <i class="bi bi-person-circle"></i>
-                        <span>My Profile</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="nav-link menu-link w-100 text-start border-0 bg-transparent">
-                            <i class="bi bi-box-arrow-right text-danger"></i>
-                            <span class="text-danger">Logout</span>
-                        </button>
-                    </form>
-                </li>
 
             </ul>
+
+            @if($sidebarUser)
+                <div class="ccbrt-sidebar-account">
+                    <a href="{{ route('profile.edit') }}" class="ccbrt-account-summary" title="Open profile">
+                        <span class="ccbrt-account-avatar">{{ $sidebarInitials ?: 'U' }}</span>
+                        <span class="ccbrt-account-copy sidebar-expand-copy">
+                            <strong>{{ $sidebarName }}</strong>
+                            <small>{{ $sidebarUser->getRoleLabel() }}</small>
+                        </span>
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}" class="ccbrt-logout-form">
+                        @csrf
+                        <button type="submit" class="ccbrt-logout-button" title="Sign out">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span class="sidebar-expand-copy">Sign out</span>
+                        </button>
+                    </form>
+                </div>
+            @endif
         </div>
     </div>
 

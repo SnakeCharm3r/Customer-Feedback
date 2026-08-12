@@ -32,7 +32,7 @@ class FeedbackManualController extends Controller
         $wingKeys            = implode(',', array_keys(\App\Models\Feedback::WINGS));
 
         $validated = $request->validate([
-            'patient_name'              => 'required|string|max:255',
+            'patient_name'              => 'nullable|string|max:255',
             'email'                     => 'nullable|email|max:255',
             'phone'                     => 'nullable|string|max:20',
             'collection_means'          => 'required|in:' . $collectionMeansKeys,
@@ -63,7 +63,7 @@ class FeedbackManualController extends Controller
 
         $feedback = Feedback::create([
             'reference_no'              => $referenceNo,
-            'patient_name'              => $validated['patient_name'],
+            'patient_name'              => $validated['patient_name'] ?? null,
             'email'                     => $validated['email'],
             'phone'                     => $validated['phone'],
             'service_units'             => $serviceUnits,

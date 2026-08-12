@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EscalationController;
 use App\Http\Controllers\FeedbackAdminController;
 use App\Http\Controllers\FeedbackController;
@@ -52,9 +53,7 @@ Route::get('/system-assets/{asset}', [SystemSettingController::class, 'asset'])
     ->whereIn('asset', ['logo', 'favicon'])
     ->name('system-assets.show');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -98,6 +98,13 @@
                                class="form-control @error('password_confirmation') is-invalid @enderror"
                                required autocomplete="new-password"
                                placeholder="Confirm new password">
+                        <button type="button"
+                                id="togglePasswordConfirmation"
+                                class="login-password-toggle"
+                                aria-label="Show password confirmation"
+                                aria-pressed="false">
+                            <i class="bi bi-eye fs-5"></i>
+                        </button>
                     </div>
                     @error('password_confirmation')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
@@ -123,19 +130,26 @@
     document.addEventListener('DOMContentLoaded', function () {
         const passwordInput = document.getElementById('password');
         const togglePassword = document.getElementById('togglePassword');
+        const passwordConfirmationInput = document.getElementById('password_confirmation');
+        const togglePasswordConfirmation = document.getElementById('togglePasswordConfirmation');
         const resetPasswordForm = document.getElementById('resetPasswordForm');
         const submitButton = document.getElementById('resetPasswordSubmitButton');
 
-        if (passwordInput && togglePassword) {
-            togglePassword.addEventListener('click', function () {
-                const isHidden = passwordInput.type === 'password';
-                passwordInput.type = isHidden ? 'text' : 'password';
-                togglePassword.setAttribute('aria-label',   isHidden ? 'Hide password' : 'Show password');
-                togglePassword.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
-                togglePassword.querySelector('i')?.classList.toggle('bi-eye',       !isHidden);
-                togglePassword.querySelector('i')?.classList.toggle('bi-eye-slash',  isHidden);
+        const setupPasswordToggle = function (input, toggle, label) {
+            if (!input || !toggle) return;
+
+            toggle.addEventListener('click', function () {
+                const isHidden = input.type === 'password';
+                input.type = isHidden ? 'text' : 'password';
+                toggle.setAttribute('aria-label', isHidden ? `Hide ${label}` : `Show ${label}`);
+                toggle.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+                toggle.querySelector('i')?.classList.toggle('bi-eye', !isHidden);
+                toggle.querySelector('i')?.classList.toggle('bi-eye-slash', isHidden);
             });
-        }
+        };
+
+        setupPasswordToggle(passwordInput, togglePassword, 'password');
+        setupPasswordToggle(passwordConfirmationInput, togglePasswordConfirmation, 'password confirmation');
 
         if (resetPasswordForm && submitButton) {
             resetPasswordForm.addEventListener('submit', function () {

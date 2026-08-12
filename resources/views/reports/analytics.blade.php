@@ -9,10 +9,21 @@
 
     .analytics-filter-bar { background: var(--tb-card-bg, #fff); border: 1px solid var(--tb-border-color, #e9ebec); border-radius: 8px; padding: 14px 18px; }
 
-    .chart-card { border-radius: 10px; }
+    .chart-card { overflow: hidden; border-radius: 10px; }
     .chart-card .chart-card-header { padding: 14px 18px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
     .chart-card .chart-card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--tb-text-muted, #878a99); margin: 0; }
     .chart-card .chart-card-total { font-size: 22px; font-weight: 800; color: var(--tb-heading-color, #1a1e2a); line-height: 1; }
+    .analytics-chart { position: relative; width: 100%; min-width: 0; }
+    .analytics-chart--donut { min-height: 290px; }
+    .analytics-chart--trend { min-height: 320px; }
+    .analytics-chart--bar { min-height: 320px; }
+    .analytics-chart-empty { display: flex; min-height: inherit; align-items: center; justify-content: center; flex-direction: column; gap: 8px; padding: 24px; color: var(--tb-text-muted,#878a99); text-align: center; }
+    .analytics-chart-empty i { font-size: 28px; opacity: .55; }
+    .analytics-chart-empty strong { color: var(--tb-heading-color,#1a1e2a); font-size: 13px; }
+    .analytics-chart-empty span { max-width: 280px; font-size: 11px; line-height: 1.5; }
+    .analytics-chart .apexcharts-canvas,
+    .analytics-chart .apexcharts-svg { max-width: 100% !important; }
+    .analytics-chart .apexcharts-legend-text { font-family: Poppins, Arial, sans-serif !important; }
 
     .tab-pill { display: inline-flex; gap: 4px; background: var(--tb-light, #f3f6f9); border-radius: 8px; padding: 4px; }
     .tab-pill .tab-btn { border: none; background: transparent; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: var(--tb-text-muted, #878a99); cursor: pointer; transition: all .18s; }
@@ -23,6 +34,8 @@
     [data-bs-theme="dark"] .analytics-filter-bar { border-color: rgba(255,255,255,0.08); }
     [data-bs-theme="dark"] .chart-card .chart-card-title { color: var(--dm-text-muted, #94a3b8); }
     [data-bs-theme="dark"] .chart-card .chart-card-total { color: var(--dm-text, #e2e8f0); }
+    [data-bs-theme="dark"] .analytics-chart-empty { color: var(--dm-text-muted,#94a3b8); }
+    [data-bs-theme="dark"] .analytics-chart-empty strong { color: var(--dm-text,#e2e8f0); }
 
     .cat-tab-content { display: none; }
     .cat-tab-content.active { display: block; }
@@ -36,6 +49,23 @@
     [data-bs-theme="dark"] .pct-bar-wrap { background: rgba(255,255,255,0.08); }
     [data-bs-theme="dark"] .theme-table th { color: var(--dm-text-muted,#94a3b8); border-color: rgba(255,255,255,0.08); }
     [data-bs-theme="dark"] .theme-table td { border-color: rgba(255,255,255,0.06); }
+
+    @media (max-width: 767.98px) {
+        .chart-card .chart-card-header { align-items: flex-start; padding: 14px 14px 0; }
+        .chart-card .card-body { padding-inline: 10px; }
+        .chart-card .chart-card-total { font-size: 18px; }
+        .analytics-chart--donut { min-height: 310px; }
+        .analytics-chart--trend { min-height: 300px; }
+        .analytics-chart--bar { min-height: 360px; }
+        .tab-pill { width: 100%; overflow-x: auto; scrollbar-width: thin; }
+        .tab-pill .tab-btn { flex: 0 0 auto; }
+    }
+
+    @media (max-width: 479.98px) {
+        .analytics-chart--donut { min-height: 330px; }
+        .analytics-chart--trend { min-height: 285px; }
+        .analytics-chart--bar { min-height: 390px; }
+    }
 </style>
 
 {{-- ── Page Header ── --}}
@@ -179,7 +209,7 @@
                 <span class="badge bg-success-subtle text-success" style="font-size:10px;">Sentiment split</span>
             </div>
             <div class="card-body pb-2">
-                <div id="chart-sentiment" style="min-height:260px;"></div>
+                <div id="chart-sentiment" class="analytics-chart analytics-chart--donut" aria-label="Feedback sentiment chart"></div>
             </div>
         </div>
     </div>
@@ -193,7 +223,7 @@
                 <span class="badge bg-info-subtle text-info" style="font-size:10px;">By source</span>
             </div>
             <div class="card-body pb-2">
-                <div id="chart-collection" style="min-height:260px;"></div>
+                <div id="chart-collection" class="analytics-chart analytics-chart--donut" aria-label="Feedback collection means chart"></div>
             </div>
         </div>
     </div>
@@ -210,7 +240,7 @@
                 </div>
             </div>
             <div class="card-body pb-2">
-                <div id="chart-trend" style="min-height:280px;"></div>
+                <div id="chart-trend" class="analytics-chart analytics-chart--trend" aria-label="Monthly feedback trend chart"></div>
             </div>
         </div>
     </div>
@@ -227,7 +257,7 @@
                 </div>
             </div>
             <div class="card-body pb-2">
-                <div id="chart-general-themes" style="min-height:280px;"></div>
+                <div id="chart-general-themes" class="analytics-chart analytics-chart--bar" aria-label="General feedback themes chart"></div>
             </div>
         </div>
     </div>
@@ -476,73 +506,225 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const isDark = () => document.documentElement.getAttribute('data-bs-theme') === 'dark';
-    const textColor  = () => isDark() ? '#94a3b8' : '#64748b';
-    const gridColor  = () => isDark() ? 'rgba(255,255,255,0.06)' : '#f1f5f9';
-    const bgColor    = () => isDark() ? 'transparent' : '#fff';
+    if (typeof ApexCharts === 'undefined') return;
 
-    // ── Sentiment Pie ──
-    new ApexCharts(document.getElementById('chart-sentiment'), {
-        chart: { type: 'donut', height: 260, background: 'transparent', toolbar: { show: false } },
-        series: @json($sentCounts),
-        labels: @json($sentLabels),
-        colors: @json($sentColors),
-        legend: { position: 'bottom', fontSize: '12px', labels: { colors: textColor() } },
-        dataLabels: { enabled: true, formatter: (val) => val.toFixed(1) + '%' },
-        plotOptions: { pie: { donut: { size: '58%', labels: { show: true, total: { show: true, label: 'Total', color: textColor() } } } } },
-        tooltip: { y: { formatter: (v) => v + ' submissions' } },
-        theme: { mode: isDark() ? 'dark' : 'light' },
-    }).render();
+    const sentimentCounts = @json(array_values($sentCounts));
+    const sentimentLabels = @json(array_values($sentLabels));
+    const collectionCounts = @json(array_values($colCounts));
+    const collectionLabels = @json(array_values($colLabels));
+    const trendSeries = [
+        { name: 'Positive', data: @json(array_values($trend['positive'])) },
+        { name: 'Negative', data: @json(array_values($trend['negative'])) },
+        { name: 'Neutral', data: @json(array_values($trend['neutral'])) },
+    ];
+    const themeLabels = @json(array_values($genLabels));
+    const themeCounts = @json(array_values($genCounts));
+    const monthLabels = @json(array_values($months));
+    const chartRegistry = [];
 
-    // ── Collection Means Pie ──
-    new ApexCharts(document.getElementById('chart-collection'), {
-        chart: { type: 'donut', height: 260, background: 'transparent', toolbar: { show: false } },
-        series: @json($colCounts),
-        labels: @json($colLabels),
-        colors: {!! json_encode(array_slice($colColors, 0, count($colLabels))) !!},
-        legend: { position: 'bottom', fontSize: '12px', labels: { colors: textColor() } },
-        dataLabels: { enabled: true, formatter: (val) => val.toFixed(1) + '%' },
-        plotOptions: { pie: { donut: { size: '58%', labels: { show: true, total: { show: true, label: 'Total', color: textColor() } } } } },
-        tooltip: { y: { formatter: (v) => v + ' submissions' } },
-        theme: { mode: isDark() ? 'dark' : 'light' },
-    }).render();
+    const isDark = function () {
+        return document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    };
+    const palette = function () {
+        return {
+            text: isDark() ? '#aebcb4' : '#64748b',
+            heading: isDark() ? '#e7eee9' : '#163223',
+            grid: isDark() ? 'rgba(174,188,180,.14)' : 'rgba(11,107,44,.10)',
+            tooltip: isDark() ? 'dark' : 'light',
+        };
+    };
+    const hasValues = function (series) {
+        return series.flatMap(function (item) { return Array.isArray(item) ? item : (item.data || []); })
+            .some(function (value) { return Number(value) > 0; });
+    };
+    const showEmptyState = function (element, message) {
+        element.innerHTML = '<div class="analytics-chart-empty" role="status">'
+            + '<i class="bi bi-bar-chart" aria-hidden="true"></i>'
+            + '<strong>No chart data available</strong>'
+            + '<span>' + message + '</span>'
+            + '</div>';
+    };
+    const registerChart = function (selector, hasData, emptyMessage, optionsFactory) {
+        const element = document.querySelector(selector);
+        if (!element) return;
+        element.setAttribute('role', 'img');
 
-    // ── Monthly Trend Line ──
-    new ApexCharts(document.getElementById('chart-trend'), {
-        chart: { type: 'area', height: 280, background: 'transparent', toolbar: { show: true }, zoom: { enabled: false } },
-        series: [
-            { name: 'Positive', data: @json($trend['positive']) },
-            { name: 'Negative', data: @json($trend['negative']) },
-            { name: 'Neutral',  data: @json($trend['neutral']) },
-        ],
-        colors: ['#0b8a38', '#dc2626', '#94a3b8'],
-        xaxis: { categories: @json($months), labels: { style: { colors: textColor() } } },
-        yaxis: { labels: { style: { colors: textColor() } }, min: 0, forceNiceScale: true },
-        grid: { borderColor: gridColor() },
-        legend: { labels: { colors: textColor() } },
-        stroke: { curve: 'smooth', width: 2 },
-        fill: { type: 'gradient', gradient: { opacityFrom: 0.35, opacityTo: 0.05 } },
-        dataLabels: { enabled: false },
-        tooltip: { y: { formatter: (v) => v + ' submissions' } },
-        theme: { mode: isDark() ? 'dark' : 'light' },
-    }).render();
+        if (!hasData) {
+            showEmptyState(element, emptyMessage);
+            return;
+        }
 
-    // ── General Themes Bar ──
-    new ApexCharts(document.getElementById('chart-general-themes'), {
-        chart: { type: 'bar', height: 280, background: 'transparent', toolbar: { show: false } },
-        series: [{ name: 'Count', data: @json($genCounts) }],
-        colors: ['#065321'],
-        xaxis: { categories: @json($genLabels), labels: { style: { colors: textColor(), fontSize: '10px' }, rotate: -30 } },
-        yaxis: { labels: { style: { colors: textColor() } }, min: 0, forceNiceScale: true },
-        grid: { borderColor: gridColor() },
-        dataLabels: { enabled: true, style: { fontSize: '10px', colors: ['#fff'] } },
-        plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
-        tooltip: { y: { formatter: (v) => v + ' entries' } },
-        theme: { mode: isDark() ? 'dark' : 'light' },
-    }).render();
+        const chart = new ApexCharts(element, optionsFactory());
+        chart.render();
+        chartRegistry.push({ chart: chart, optionsFactory: optionsFactory });
+    };
+    const baseChart = function (type, height) {
+        const colors = palette();
+        return {
+            chart: {
+                type: type,
+                height: height,
+                width: '100%',
+                background: 'transparent',
+                fontFamily: 'Poppins, Arial, sans-serif',
+                foreColor: colors.text,
+                animations: { enabled: true, easing: 'easeinout', speed: 450 },
+                redrawOnParentResize: true,
+                redrawOnWindowResize: true,
+                toolbar: { show: false },
+                zoom: { enabled: false },
+            },
+            theme: { mode: isDark() ? 'dark' : 'light' },
+            grid: { borderColor: colors.grid, strokeDashArray: 4 },
+            tooltip: { theme: colors.tooltip },
+            noData: { text: 'No data for the selected filters', style: { color: colors.text } },
+        };
+    };
+    const donutOptions = function (series, labels, colors) {
+        const options = baseChart('donut', 290);
+        const theme = palette();
+        return Object.assign(options, {
+            series: series,
+            labels: labels,
+            colors: colors,
+            stroke: { width: 3, colors: [isDark() ? '#2a3042' : '#ffffff'] },
+            legend: {
+                position: 'bottom',
+                horizontalAlign: 'center',
+                fontSize: '11px',
+                fontWeight: 500,
+                labels: { colors: theme.text },
+                markers: { width: 9, height: 9, radius: 9 },
+                itemMargin: { horizontal: 9, vertical: 4 },
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (value) { return value >= 4 ? value.toFixed(1) + '%' : ''; },
+                style: { fontSize: '10px', fontWeight: 600, colors: ['#ffffff'] },
+                dropShadow: { enabled: false },
+            },
+            plotOptions: {
+                pie: {
+                    expandOnClick: true,
+                    donut: {
+                        size: '62%',
+                        labels: {
+                            show: true,
+                            name: { color: theme.text, fontSize: '11px' },
+                            value: { color: theme.heading, fontSize: '20px', fontWeight: 700 },
+                            total: {
+                                show: true,
+                                label: 'Total',
+                                color: theme.text,
+                                fontSize: '11px',
+                                formatter: function (context) {
+                                    return context.globals.seriesTotals.reduce(function (sum, value) { return sum + value; }, 0);
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            tooltip: { theme: theme.tooltip, y: { formatter: function (value) { return value + ' submission' + (value === 1 ? '' : 's'); } } },
+            responsive: [
+                { breakpoint: 768, options: { chart: { height: 310 }, legend: { fontSize: '10px', itemMargin: { horizontal: 6, vertical: 4 } }, plotOptions: { pie: { donut: { size: '66%' } } } } },
+                { breakpoint: 480, options: { chart: { height: 330 }, dataLabels: { enabled: false }, legend: { position: 'bottom', horizontalAlign: 'left' }, plotOptions: { pie: { donut: { size: '68%' } } } } },
+            ],
+        });
+    };
+
+    registerChart(
+        '#chart-sentiment',
+        hasValues([sentimentCounts]),
+        'Feedback sentiment will appear after submissions match the selected filters.',
+        function () { return donutOptions(sentimentCounts, sentimentLabels, @json(array_values($sentColors))); }
+    );
+
+    registerChart(
+        '#chart-collection',
+        hasValues([collectionCounts]),
+        'Collection means will appear after submissions match the selected filters.',
+        function () {
+            const sourcePalette = ['#0b6b2c', '#e6a400', '#198fb8', '#7c5cc4', '#6c757d', '#dc3545', '#58a931', '#d97706'];
+            return donutOptions(collectionCounts, collectionLabels, collectionLabels.map(function (_, index) { return sourcePalette[index % sourcePalette.length]; }));
+        }
+    );
+
+    registerChart(
+        '#chart-trend',
+        hasValues(trendSeries),
+        'The monthly trend will appear after feedback is recorded for this period.',
+        function () {
+            const options = baseChart('area', 320);
+            const theme = palette();
+            return Object.assign(options, {
+                series: trendSeries,
+                colors: ['#15803d', '#dc3545', '#8b98a5'],
+                stroke: { curve: 'smooth', width: [3, 3, 2], lineCap: 'round' },
+                markers: { size: 3, strokeWidth: 2, hover: { size: 6 } },
+                fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: .24, opacityTo: .025, stops: [0, 94] } },
+                dataLabels: { enabled: false },
+                xaxis: {
+                    categories: monthLabels,
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                    labels: { trim: true, style: { colors: monthLabels.map(function () { return theme.text; }), fontSize: '10px' } },
+                },
+                yaxis: { min: 0, forceNiceScale: true, decimalsInFloat: 0, labels: { formatter: function (value) { return Math.floor(value); }, style: { colors: [theme.text], fontSize: '10px' } } },
+                legend: { position: 'top', horizontalAlign: 'right', fontSize: '11px', labels: { colors: theme.text }, markers: { width: 9, height: 9, radius: 9 } },
+                tooltip: { shared: true, intersect: false, theme: theme.tooltip, y: { formatter: function (value) { return value + ' submission' + (value === 1 ? '' : 's'); } } },
+                responsive: [
+                    { breakpoint: 768, options: { chart: { height: 300 }, legend: { position: 'bottom', horizontalAlign: 'center' }, stroke: { width: [2, 2, 2] }, markers: { size: 2 } } },
+                    { breakpoint: 480, options: { chart: { height: 285 }, xaxis: { labels: { rotate: -45, rotateAlways: true, hideOverlappingLabels: true } }, grid: { padding: { left: 2, right: 5 } } } },
+                ],
+            });
+        }
+    );
+
+    registerChart(
+        '#chart-general-themes',
+        hasValues([themeCounts]),
+        'Theme distribution will appear after feedback is classified.',
+        function () {
+            const options = baseChart('bar', 320);
+            const theme = palette();
+            return Object.assign(options, {
+                series: [{ name: 'Entries', data: themeCounts }],
+                colors: ['#0b6b2c'],
+                plotOptions: { bar: { borderRadius: 5, borderRadiusApplication: 'end', columnWidth: '48%', distributed: false } },
+                dataLabels: { enabled: true, offsetY: -5, style: { fontSize: '10px', fontWeight: 600, colors: [theme.heading] }, background: { enabled: false } },
+                xaxis: {
+                    categories: themeLabels,
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                    labels: {
+                        rotate: -35,
+                        trim: true,
+                        hideOverlappingLabels: true,
+                        style: { colors: themeLabels.map(function () { return theme.text; }), fontSize: '9px' },
+                        formatter: function (value) { return String(value).length > 18 ? String(value).slice(0, 17) + '…' : value; },
+                    },
+                },
+                yaxis: { min: 0, forceNiceScale: true, decimalsInFloat: 0, labels: { formatter: function (value) { return Math.floor(value); }, style: { colors: [theme.text], fontSize: '10px' } } },
+                tooltip: { theme: theme.tooltip, x: { formatter: function (_, context) { return themeLabels[context.dataPointIndex] || ''; } }, y: { formatter: function (value) { return value + ' entr' + (value === 1 ? 'y' : 'ies'); } } },
+                responsive: [
+                    { breakpoint: 768, options: { chart: { height: Math.max(360, themeLabels.length * 42) }, plotOptions: { bar: { horizontal: true, barHeight: '58%', borderRadius: 4 } }, dataLabels: { offsetX: 8, offsetY: 0 }, xaxis: { categories: themeLabels, labels: { rotate: 0, style: { fontSize: '9px' } } }, yaxis: { labels: { maxWidth: 135, style: { fontSize: '9px' } } }, grid: { padding: { left: 4, right: 14 } } } },
+                    { breakpoint: 480, options: { chart: { height: Math.max(390, themeLabels.length * 46) }, yaxis: { labels: { maxWidth: 110, style: { fontSize: '9px' } } } } },
+                ],
+            });
+        }
+    );
+
+    new MutationObserver(function (mutations) {
+        const themeChanged = mutations.some(function (mutation) { return mutation.attributeName === 'data-bs-theme'; });
+        if (!themeChanged) return;
+        chartRegistry.forEach(function (entry) {
+            entry.chart.updateOptions(entry.optionsFactory(), false, true);
+        });
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
 
     // ── Category tab switching ──
-    document.getElementById('catTabPill').addEventListener('click', function (e) {
+    document.getElementById('catTabPill')?.addEventListener('click', function (e) {
         const btn = e.target.closest('.tab-btn');
         if (!btn) return;
         document.querySelectorAll('#catTabPill .tab-btn').forEach(b => b.classList.remove('active'));

@@ -20,6 +20,11 @@
     .form-section-header h5 { margin: 0; color: var(--ccbrt-navy); font-weight: 700; font-size: 1rem; }
     .form-section-header .section-optional { margin-left: 0.4rem; font-size: 0.8rem; font-weight: 400; color: #6c757d; }
 
+    /* ── Questions: visually distinct from the numbered form sections ── */
+    .question-label { display: flex; align-items: flex-start; gap: 0.65rem; margin-bottom: 0.6rem; color: var(--ccbrt-navy); line-height: 1.45; }
+    .question-number { min-width: 2.15rem; height: 1.65rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 0.05rem; border: 1px solid #b8d9c3; border-radius: 999px; background: #eef8f1; color: var(--ccbrt-teal); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.02em; }
+    .question-text { flex: 1; min-width: 0; }
+
     /* ── Feedback type cards ── */
     .feedback-type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-top: 0.5rem; }
     .feedback-type-radio, .rating-radio, .service-unit-check, .confidentiality-radio { position: absolute; opacity: 0; pointer-events: none; }
@@ -163,8 +168,8 @@
 
                 <!-- Confidentiality Disclaimer -->
                 <div class="alert mb-4 feedback-form-shell" style="background-color: #f0f7f4; border-left: 4px solid var(--ccbrt-teal); border-radius: 6px;">
-                    <h6 class="mb-2" style="color: var(--ccbrt-teal);"><i class="bi bi-shield-lock me-2"></i>Confidentiality &amp; Privacy Notice</h6>
-                    <p class="mb-0 small">All information submitted through this form is treated with the strictest confidentiality. Your feedback will only be used to improve our services and will never be shared, disclosed, or used in any way that could harm or identify you without your consent.</p>
+                    <h6 class="mb-2" style="color: var(--ccbrt-teal);"><i class="bi bi-shield-lock me-2"></i>{{ __('portal.feedback_create.privacy_notice.title') }}</h6>
+                    <p class="mb-0 small">{{ __('portal.feedback_create.privacy_notice.body') }}</p>
                 </div>
 
                 <!-- Form Card -->
@@ -279,10 +284,10 @@
 
                             <div class="row mb-4">
                                 <div class="col-md-6 mb-3">
-                                    <label for="location" class="form-label">CCBRT Location <span class="text-muted fw-normal small">({{ __('portal.common.optional') }})</span></label>
+                                    <label for="location" class="form-label">{{ __('portal.feedback_create.fields.location') }} <span class="text-muted fw-normal small">({{ __('portal.common.optional') }})</span></label>
                                     <select class="form-select form-control-ccbrt @error('location') is-invalid @enderror"
                                             id="location" name="location">
-                                        <option value="">— Select the branch you visited —</option>
+                                        <option value="">{{ __('portal.feedback_create.fields.location_placeholder') }}</option>
                                         @foreach(\App\Models\Feedback::getLocations() as $value => $label)
                                             <option value="{{ $value }}" {{ old('location') === $value ? 'selected' : '' }}>{{ $label }}</option>
                                         @endforeach
@@ -305,40 +310,40 @@
                                     <div class="d-flex align-items-center gap-2">
                                         <i class="bi bi-shop" style="color:#15803d;font-size:1.2rem;"></i>
                                         <div>
-                                            <strong style="color:#14532d;">Mabinti Centre — Compliment Submission</strong>
-                                            <p class="mb-0 small text-muted mt-1">Your name and organisation (if applicable) will be included in our records. All fields below are optional.</p>
+                                            <strong style="color:#14532d;">{{ __('portal.feedback_create.mabinti.compliment_title') }}</strong>
+                                            <p class="mb-0 small text-muted mt-1">{{ __('portal.feedback_create.mabinti.compliment_description') }}</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="organization_name" class="form-label">Organisation / Company <span class="text-muted fw-normal small">(optional)</span></label>
+                                        <label for="organization_name" class="form-label">{{ __('portal.feedback_create.fields.organization_name') }} <span class="text-muted fw-normal small">({{ __('portal.common.optional') }})</span></label>
                                         <input type="text" class="form-control form-control-ccbrt @error('organization_name') is-invalid @enderror"
                                                id="organization_name" name="organization_name"
                                                value="{{ old('organization_name') }}"
-                                               placeholder="e.g. TRA, Danish Ambassador Tanzania">
-                                        <div class="form-text text-muted">Enter the name of your company or organisation if you are writing on their behalf.</div>
+                                               placeholder="{{ __('portal.feedback_create.fields.organization_name_placeholder') }}">
+                                        <div class="form-text text-muted">{{ __('portal.feedback_create.fields.organization_name_help') }}</div>
                                         @error('organization_name')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="submitter_location_text" class="form-label">Your Location / From <span class="text-muted fw-normal small">(optional)</span></label>
+                                        <label for="submitter_location_text" class="form-label">{{ __('portal.feedback_create.fields.submitter_location') }} <span class="text-muted fw-normal small">({{ __('portal.common.optional') }})</span></label>
                                         <input type="text" class="form-control form-control-ccbrt @error('submitter_location_text') is-invalid @enderror"
                                                id="submitter_location_text" name="submitter_location_text"
                                                value="{{ old('submitter_location_text') }}"
-                                               placeholder="e.g. Dar es Salaam, Kenya, UK Embassy">
+                                               placeholder="{{ __('portal.feedback_create.fields.submitter_location_placeholder') }}">
                                         @error('submitter_location_text')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>
                                 <div class="mb-0">
-                                    <label for="mabinti_compliment_text" class="form-label fw-semibold">Your Compliment <span class="text-muted fw-normal small">(optional)</span></label>
+                                    <label for="mabinti_compliment_text" class="form-label fw-semibold">{{ __('portal.feedback_create.fields.compliment') }} <span class="text-muted fw-normal small">({{ __('portal.common.optional') }})</span></label>
                                     <textarea class="form-control form-control-ccbrt @error('message') is-invalid @enderror"
                                               id="mabinti_compliment_text" name="message" rows="4"
-                                              placeholder="Share your kind words about Mabinti Centre — our products, team, or service...">{{ old('message') }}</textarea>
-                                    <div class="form-text text-muted">This will be recorded as your compliment text.</div>
+                                              placeholder="{{ __('portal.feedback_create.fields.compliment_placeholder') }}">{{ old('message') }}</textarea>
+                                    <div class="form-text text-muted">{{ __('portal.feedback_create.fields.compliment_help') }}</div>
                                     @error('message')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -357,7 +362,10 @@
                             @endphp
 
                             <div class="mb-4" id="service-units-section">
-                                <label class="form-label fw-semibold">1. {{ __('portal.feedback_create.questions.service_offered') }}</label>
+                                <label class="form-label fw-semibold question-label">
+                                    <span class="question-number">{{ __('portal.feedback_create.questions.number_label', ['number' => 1]) }}</span>
+                                    <span class="question-text">{{ __('portal.feedback_create.questions.service_offered') }}</span>
+                                </label>
                                 <p class="professional-note mb-0" id="service-units-hint">{{ __('portal.feedback_create.questions.service_offered_hint') }}</p>
                                 <div id="service-units-panel" class="service-units-panel">
                                     @php
@@ -376,7 +384,7 @@
                                             <div class="service-units-pills">
                                                 @foreach($group['units'] as $value => $label)
                                                     <input class="service-unit-check" type="checkbox" name="service_units[]" id="su_{{ $value }}" value="{{ $value }}" {{ in_array($value, $oldUnits) ? 'checked' : '' }}>
-                                                    <label class="service-unit-pill" for="su_{{ $value }}">{{ $label }}</label>
+                                                    <label class="service-unit-pill" for="su_{{ $value }}">{{ __('portal.options.service_units.' . $value) }}</label>
                                                 @endforeach
                                             </div>
                                         </div>
@@ -392,7 +400,7 @@
                                            class="form-control form-control-ccbrt @error('service_unit_other_text') is-invalid @enderror"
                                            id="service_unit_other_text" name="service_unit_other_text"
                                            value="{{ old('service_unit_other_text') }}"
-                                           placeholder="Please specify the product or service you received...">
+                                           placeholder="{{ __('portal.feedback_create.fields.service_unit_other_placeholder') }}">
                                     @error('service_unit_other_text')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -400,7 +408,10 @@
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label fw-semibold">2. {{ __('portal.feedback_create.questions.service_rating') }} <span class="text-danger">*</span></label>
+                                <label class="form-label fw-semibold question-label">
+                                    <span class="question-number">{{ __('portal.feedback_create.questions.number_label', ['number' => 2]) }}</span>
+                                    <span class="question-text">{{ __('portal.feedback_create.questions.service_rating') }} <span class="text-danger">*</span></span>
+                                </label>
                                 <div class="rating-grid">
                                     @php
                                         $ratingMeta = [
@@ -432,7 +443,10 @@
                             {{-- Q3: Mabinti → product satisfaction | Standard → confidentiality --}}
                             <div id="q3-confidentiality-block" class="row mb-4">
                                 <div class="col-lg-6 mb-3">
-                                    <label class="form-label fw-semibold">3. {{ __('portal.feedback_create.questions.confidentiality') }}</label>
+                                    <label class="form-label fw-semibold question-label">
+                                        <span class="question-number">{{ __('portal.feedback_create.questions.number_label', ['number' => 3]) }}</span>
+                                        <span class="question-text">{{ __('portal.feedback_create.questions.confidentiality') }}</span>
+                                    </label>
                                     <div class="confidentiality-choice-group">
                                         <input class="confidentiality-radio" type="radio" name="confidentiality_respected" id="confidentiality_yes" value="1" {{ old('confidentiality_respected') === '1' ? 'checked' : '' }}>
                                         <label class="confidentiality-choice" for="confidentiality_yes"><i class="bi bi-check-circle"></i>{{ __('portal.common.yes') }}</label>
@@ -454,20 +468,23 @@
 
                             <div id="q3-product-satisfaction-block" class="row mb-4" style="display:none;">
                                 <div class="col-lg-6 mb-3">
-                                    <label class="form-label fw-semibold">3. Were you satisfied with the delivery and quality / colour of the product?</label>
+                                    <label class="form-label fw-semibold question-label">
+                                        <span class="question-number">{{ __('portal.feedback_create.questions.number_label', ['number' => 3]) }}</span>
+                                        <span class="question-text">{{ __('portal.feedback_create.questions.product_satisfaction') }}</span>
+                                    </label>
                                     <div class="confidentiality-choice-group">
                                         <input class="confidentiality-radio" type="radio" name="product_satisfied" id="product_satisfied_yes" value="1" {{ old('product_satisfied') === '1' ? 'checked' : '' }}>
-                                        <label class="confidentiality-choice" for="product_satisfied_yes"><i class="bi bi-check-circle"></i>Yes</label>
+                                        <label class="confidentiality-choice" for="product_satisfied_yes"><i class="bi bi-check-circle"></i>{{ __('portal.common.yes') }}</label>
 
                                         <input class="confidentiality-radio" type="radio" name="product_satisfied" id="product_satisfied_no" value="0" {{ old('product_satisfied') === '0' ? 'checked' : '' }}>
-                                        <label class="confidentiality-choice" for="product_satisfied_no"><i class="bi bi-x-circle"></i>No</label>
+                                        <label class="confidentiality-choice" for="product_satisfied_no"><i class="bi bi-x-circle"></i>{{ __('portal.common.no') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-lg-6 mb-3">
-                                    <label for="product_satisfaction_comment" class="form-label">If no, please explain</label>
+                                    <label for="product_satisfaction_comment" class="form-label">{{ __('portal.feedback_create.fields.product_satisfaction_comment') }}</label>
                                     <textarea class="form-control form-control-ccbrt @error('product_satisfaction_comment') is-invalid @enderror"
                                               id="product_satisfaction_comment" name="product_satisfaction_comment" rows="3"
-                                              placeholder="Tell us what was wrong with the delivery, quality or colour...">{{ old('product_satisfaction_comment') }}</textarea>
+                                              placeholder="{{ __('portal.feedback_create.fields.product_satisfaction_comment_placeholder') }}">{{ old('product_satisfaction_comment') }}</textarea>
                                     @error('product_satisfaction_comment')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -475,7 +492,10 @@
                             </div>
 
                             <div class="mb-4">
-                                <label for="overall_experience" class="form-label required fw-semibold">4. {{ __('portal.feedback_create.fields.overall_experience') }} <span class="text-danger">*</span></label>
+                                <label for="overall_experience" class="form-label required fw-semibold question-label">
+                                    <span class="question-number">{{ __('portal.feedback_create.questions.number_label', ['number' => 4]) }}</span>
+                                    <span class="question-text">{{ __('portal.feedback_create.fields.overall_experience') }} <span class="text-danger">*</span></span>
+                                </label>
                                 <textarea class="form-control form-control-ccbrt @error('overall_experience') is-invalid @enderror"
                                           id="overall_experience" name="overall_experience" rows="4" required
                                           placeholder="{{ __('portal.feedback_create.fields.overall_experience_placeholder') }}">{{ old('overall_experience') }}</textarea>
@@ -488,7 +508,10 @@
                             </div>
 
                             <div class="mb-4">
-                                <label for="improvement_suggestion" class="form-label fw-semibold">5. {{ __('portal.feedback_create.fields.improvement_suggestion') }}</label>
+                                <label for="improvement_suggestion" class="form-label fw-semibold question-label">
+                                    <span class="question-number">{{ __('portal.feedback_create.questions.number_label', ['number' => 5]) }}</span>
+                                    <span class="question-text">{{ __('portal.feedback_create.fields.improvement_suggestion') }}</span>
+                                </label>
                                 <textarea class="form-control form-control-ccbrt @error('improvement_suggestion') is-invalid @enderror"
                                           id="improvement_suggestion" name="improvement_suggestion" rows="4"
                                           placeholder="{{ __('portal.feedback_create.fields.improvement_suggestion_placeholder') }}">{{ old('improvement_suggestion') }}</textarea>
@@ -798,7 +821,7 @@
             const key = locationSelect.value;
             if (key && locationMap[key]) {
                 panel.innerHTML = buildCustomPanel(locationMap[key]);
-                if (hintEl) hintEl.textContent = 'Select all products or services related to your visit.';
+                if (hintEl) hintEl.textContent = @json(__('portal.feedback_create.questions.custom_service_hint'));
             } else {
                 panel.innerHTML = defaultHTML;
                 if (hintEl) hintEl.textContent = defaultHint;

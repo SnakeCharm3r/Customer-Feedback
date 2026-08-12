@@ -880,6 +880,357 @@
                 position: static !important;
             }
         }
+
+        /* ── CCBRT application sidebar ──────────────────────────────────────
+           A compact, component-led admin rail while retaining the Laravel
+           theme's native responsive and collapsed-sidebar behaviour.
+        ─────────────────────────────────────────────────────────────────────── */
+        .ccbrt-sidebar {
+            --sidebar-surface: rgba(255, 255, 255, 0.075);
+            --sidebar-surface-hover: rgba(255, 255, 255, 0.115);
+            --sidebar-surface-active: rgba(255, 255, 255, 0.16);
+            --sidebar-border: rgba(210, 238, 166, 0.16);
+            --sidebar-muted: rgba(236, 253, 245, 0.65);
+            box-shadow: 12px 0 34px rgba(4, 50, 20, 0.12);
+        }
+
+        .ccbrt-sidebar .ccbrt-sidebar-brand {
+            padding: 0 0.8rem 0 1rem;
+        }
+
+        .ccbrt-sidebar .ccbrt-sidebar-collapse {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--sidebar-border);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.72) !important;
+            background: rgba(255, 255, 255, 0.06) !important;
+            transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+        }
+
+        .ccbrt-sidebar .ccbrt-sidebar-collapse:hover,
+        .ccbrt-sidebar .ccbrt-sidebar-collapse:focus-visible {
+            color: #ffffff !important;
+            border-color: rgba(210, 238, 166, 0.35);
+            background: rgba(255, 255, 255, 0.12) !important;
+        }
+
+        .ccbrt-sidebar #scrollbar {
+            height: calc(100vh - var(--tb-header-height, 70px));
+        }
+
+        .ccbrt-sidebar .ccbrt-sidebar-content {
+            padding: 0.9rem 0.75rem 1rem;
+        }
+
+        .ccbrt-workspace-card {
+            min-height: 58px;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin: 0 0 1rem;
+            padding: 0.65rem;
+            border: 1px solid var(--sidebar-border);
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.045));
+        }
+
+        .ccbrt-workspace-icon {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 34px;
+            border-radius: 10px;
+            color: #d9f99d;
+            background: rgba(148, 200, 61, 0.17);
+        }
+
+        .ccbrt-workspace-copy,
+        .ccbrt-account-copy {
+            min-width: 0;
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+        }
+
+        .ccbrt-workspace-copy strong,
+        .ccbrt-account-copy strong {
+            overflow: hidden;
+            color: #ffffff;
+            font-size: 0.78rem;
+            font-weight: 700;
+            line-height: 1.3;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ccbrt-workspace-copy small,
+        .ccbrt-account-copy small {
+            overflow: hidden;
+            color: var(--sidebar-muted);
+            font-size: 0.66rem;
+            line-height: 1.4;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ccbrt-workspace-status {
+            width: 7px;
+            height: 7px;
+            flex: 0 0 7px;
+            border-radius: 50%;
+            background: #bef264;
+            box-shadow: 0 0 0 4px rgba(190, 242, 100, 0.1);
+        }
+
+        .ccbrt-sidebar-nav {
+            gap: 0.2rem;
+        }
+
+        .ccbrt-sidebar .navbar-nav .menu-title {
+            height: auto;
+            margin: 1.15rem 0.55rem 0.35rem;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .ccbrt-sidebar .navbar-nav .menu-title:first-child {
+            margin-top: 0;
+        }
+
+        .ccbrt-sidebar .navbar-nav .menu-title span {
+            color: rgba(236, 253, 245, 0.52) !important;
+            font-size: 0.63rem !important;
+            font-weight: 700;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+        }
+
+        .ccbrt-sidebar .navbar-nav .nav-link {
+            position: relative;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin: 0;
+            padding: 0.35rem 0.45rem !important;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.82) !important;
+            font-size: 0.84rem !important;
+            font-weight: 560;
+            line-height: 1.2;
+            transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+        }
+
+        .ccbrt-sidebar .navbar-nav .nav-link:hover {
+            transform: translateX(2px);
+            border-color: rgba(210, 238, 166, 0.09);
+            background: var(--sidebar-surface-hover) !important;
+            color: #ffffff !important;
+        }
+
+        .ccbrt-sidebar .navbar-nav .nav-link:focus-visible,
+        .ccbrt-logout-button:focus-visible,
+        .ccbrt-account-summary:focus-visible {
+            outline: 2px solid #bef264;
+            outline-offset: 2px;
+        }
+
+        .ccbrt-sidebar .navbar-nav .nav-link.active {
+            border-color: rgba(210, 238, 166, 0.18);
+            background: var(--sidebar-surface-active) !important;
+            box-shadow: inset 3px 0 0 var(--ccbrt-brand-500), 0 6px 16px rgba(3, 45, 17, 0.14);
+            color: #ffffff !important;
+        }
+
+        .ccbrt-sidebar .sidebar-nav-icon {
+            width: 33px;
+            height: 33px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 33px;
+            border-radius: 9px;
+            color: #d9f99d;
+            background: rgba(255, 255, 255, 0.065);
+            transition: background-color 150ms ease, color 150ms ease;
+        }
+
+        .ccbrt-sidebar .navbar-nav .nav-link i,
+        .ccbrt-sidebar .sidebar-nav-icon i {
+            width: auto;
+            min-width: 0;
+            margin: 0;
+            color: inherit !important;
+            font-size: 1rem !important;
+            line-height: 1;
+        }
+
+        .ccbrt-sidebar .navbar-nav .nav-link.active .sidebar-nav-icon {
+            color: #ffffff;
+            background: rgba(148, 200, 61, 0.26);
+        }
+
+        .ccbrt-sidebar .sidebar-nav-label {
+            min-width: 0;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .sidebar-nav-count {
+            min-width: 22px;
+            height: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            padding: 0 0.36rem;
+            border-radius: 999px;
+            font-size: 0.66rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .sidebar-nav-count-danger {
+            color: #7f1d1d;
+            background: #fecaca;
+        }
+
+        .sidebar-nav-count-warning {
+            color: #78350f;
+            background: #fde68a;
+        }
+
+        .ccbrt-sidebar-account {
+            display: grid;
+            gap: 0.55rem;
+            margin-top: 1.25rem;
+            padding-top: 0.9rem;
+            border-top: 1px solid var(--sidebar-border);
+        }
+
+        .ccbrt-account-summary {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.25rem 0.3rem;
+            border-radius: 10px;
+            text-decoration: none;
+        }
+
+        .ccbrt-account-summary:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .ccbrt-account-avatar {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 34px;
+            border: 1px solid rgba(217, 249, 157, 0.3);
+            border-radius: 10px;
+            color: #ffffff;
+            background: rgba(148, 200, 61, 0.2);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+        }
+
+        .ccbrt-logout-form {
+            margin: 0;
+        }
+
+        .ccbrt-logout-button {
+            width: 100%;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid rgba(254, 202, 202, 0.17);
+            border-radius: 11px;
+            color: #fecaca;
+            background: rgba(127, 29, 29, 0.13);
+            font-size: 0.78rem;
+            font-weight: 700;
+            transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+        }
+
+        .ccbrt-logout-button i {
+            color: #fecaca !important;
+            font-size: 0.95rem;
+        }
+
+        .ccbrt-logout-button:hover {
+            border-color: rgba(254, 202, 202, 0.28);
+            color: #ffffff;
+            background: rgba(153, 27, 27, 0.24);
+        }
+
+        [data-bs-theme="dark"] .ccbrt-sidebar {
+            border-right-color: rgba(148, 200, 61, 0.22) !important;
+            box-shadow: 12px 0 34px rgba(0, 0, 0, 0.28);
+        }
+
+        [data-layout="vertical"][data-sidebar-size="sm"] .ccbrt-sidebar .ccbrt-sidebar-content,
+        [data-layout="vertical"][data-sidebar-size="sm-hover"] .ccbrt-sidebar.sidebar-brand-collapsed:not(:hover) .ccbrt-sidebar-content {
+            padding-right: 0.55rem;
+            padding-left: 0.55rem;
+        }
+
+        [data-layout="vertical"][data-sidebar-size="sm"] .ccbrt-sidebar .ccbrt-workspace-card,
+        [data-layout="vertical"][data-sidebar-size="sm"] .ccbrt-sidebar .menu-title,
+        [data-layout="vertical"][data-sidebar-size="sm"] .ccbrt-sidebar .sidebar-nav-label,
+        [data-layout="vertical"][data-sidebar-size="sm"] .ccbrt-sidebar .sidebar-nav-count,
+        [data-layout="vertical"][data-sidebar-size="sm"] .ccbrt-sidebar .sidebar-expand-copy,
+        [data-layout="vertical"][data-sidebar-size="sm-hover"] .ccbrt-sidebar.sidebar-brand-collapsed:not(:hover) .ccbrt-workspace-card,
+        [data-layout="vertical"][data-sidebar-size="sm-hover"] .ccbrt-sidebar.sidebar-brand-collapsed:not(:hover) .menu-title,
+        [data-layout="vertical"][data-sidebar-size="sm-hover"] .ccbrt-sidebar.sidebar-brand-collapsed:not(:hover) .sidebar-nav-label,
+        [data-layout="vertical"][data-sidebar-size="sm-hover"] .ccbrt-sidebar.sidebar-brand-collapsed:not(:hover) .sidebar-nav-count,
+        [data-layout="vertical"][data-sidebar-size="sm-hover"] .ccbrt-sidebar.sidebar-brand-collapsed:not(:hover) .sidebar-expand-copy {
+            display: none !important;
+        }
+
+        [data-layout="vertical"][data-sidebar-size="sm"] .ccbrt-sidebar .navbar-nav .nav-link,
+        [data-layout="vertical"][data-sidebar-size="sm-hover"] .ccbrt-sidebar.sidebar-brand-collapsed:not(:hover) .navbar-nav .nav-link {
+            justify-content: center;
+            padding-right: 0.25rem !important;
+            padding-left: 0.25rem !important;
+            box-shadow: none;
+        }
+
+        [data-layout="vertical"][data-sidebar-size="sm"] .ccbrt-sidebar .ccbrt-sidebar-account,
+        [data-layout="vertical"][data-sidebar-size="sm-hover"] .ccbrt-sidebar.sidebar-brand-collapsed:not(:hover) .ccbrt-sidebar-account {
+            justify-items: center;
+        }
+
+        [data-layout="vertical"][data-sidebar-size="sm"] .ccbrt-sidebar .ccbrt-logout-button,
+        [data-layout="vertical"][data-sidebar-size="sm-hover"] .ccbrt-sidebar.sidebar-brand-collapsed:not(:hover) .ccbrt-logout-button {
+            width: 40px;
+            padding: 0;
+        }
+
+        @media (max-width: 767.98px) {
+            .ccbrt-sidebar .ccbrt-sidebar-content {
+                padding-bottom: 1.5rem;
+            }
+
+            .ccbrt-sidebar .navbar-nav .nav-link {
+                min-height: 46px;
+                font-size: 0.88rem !important;
+            }
+        }
     </style>
 
     <!-- jsvectormap css -->
