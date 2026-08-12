@@ -659,6 +659,160 @@
             border-top: 1px solid var(--dm-border) !important;
         }
 
+        /* ── Application footer ──────────────────────────────────────────── */
+        .app-footer.footer {
+            position: relative;
+            right: auto;
+            bottom: auto;
+            left: auto;
+            height: auto;
+            min-height: 82px;
+            padding: 0;
+            border-top: 1px solid rgba(11, 107, 44, 0.1);
+            background: rgba(255, 255, 255, 0.9);
+            color: #64746b;
+            box-shadow: 0 -8px 28px rgba(6, 83, 33, 0.035);
+            backdrop-filter: blur(12px);
+        }
+
+        .app-footer-shell {
+            min-height: 82px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            padding: 1rem 0;
+        }
+
+        .app-footer-brand {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .app-footer-mark {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 40px;
+            overflow: hidden;
+            border: 1px solid rgba(11, 107, 44, 0.14);
+            border-radius: 12px;
+            background: var(--ccbrt-brand-100);
+        }
+
+        .app-footer-mark img {
+            width: 31px;
+            height: 31px;
+            object-fit: contain;
+        }
+
+        .app-footer-brand-copy {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.35;
+        }
+
+        .app-footer-brand-copy strong {
+            overflow: hidden;
+            color: var(--ccbrt-brand-900);
+            font-size: 0.79rem;
+            font-weight: 700;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .app-footer-brand-copy span {
+            overflow: hidden;
+            color: #718078;
+            font-size: 0.68rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .app-footer-meta {
+            display: flex;
+            align-items: flex-end;
+            flex-direction: column;
+            gap: 0.35rem;
+            text-align: right;
+        }
+
+        .app-footer-links {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            font-size: 0.68rem;
+            font-weight: 600;
+        }
+
+        .app-footer-links a {
+            color: var(--ccbrt-brand-800) !important;
+            text-decoration: none;
+        }
+
+        .app-footer-links a:hover {
+            color: var(--ccbrt-brand-900) !important;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .app-footer-copyright {
+            margin: 0;
+            color: #718078;
+            font-size: 0.68rem;
+            line-height: 1.5;
+        }
+
+        [data-bs-theme="dark"] .app-footer.footer {
+            border-top-color: var(--dm-border) !important;
+            background: rgba(22, 27, 24, 0.94) !important;
+            box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.16);
+        }
+
+        [data-bs-theme="dark"] .app-footer-mark {
+            border-color: rgba(148, 200, 61, 0.2);
+            background: rgba(148, 200, 61, 0.1);
+        }
+
+        [data-bs-theme="dark"] .app-footer-brand-copy strong {
+            color: #eaf5e3;
+        }
+
+        [data-bs-theme="dark"] .app-footer-brand-copy span,
+        [data-bs-theme="dark"] .app-footer-copyright {
+            color: var(--dm-text-muted);
+        }
+
+        [data-bs-theme="dark"] .app-footer-links a {
+            color: var(--ccbrt-brand-400) !important;
+        }
+
+        @media (max-width: 767.98px) {
+            .app-footer-shell {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 0.85rem;
+                padding: 1rem 0;
+            }
+
+            .app-footer-meta {
+                width: 100%;
+                align-items: flex-start;
+                text-align: left;
+            }
+
+            .app-footer-links {
+                justify-content: flex-start;
+            }
+        }
+
         /* Page title box */
         [data-bs-theme="dark"] .page-title-box { background-color: transparent !important; }
 
