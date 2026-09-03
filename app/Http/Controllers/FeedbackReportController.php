@@ -12,9 +12,19 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Chart\Axis as ChartAxis;
+use PhpOffice\PhpSpreadsheet\Chart\Chart;
+use PhpOffice\PhpSpreadsheet\Chart\DataSeries;
+use PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues;
+use PhpOffice\PhpSpreadsheet\Chart\Layout;
+use PhpOffice\PhpSpreadsheet\Chart\Legend as ChartLegend;
+use PhpOffice\PhpSpreadsheet\Chart\PlotArea;
+use PhpOffice\PhpSpreadsheet\Chart\Title as ChartTitle;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FeedbackReportController extends Controller
@@ -114,14 +124,14 @@ class FeedbackReportController extends Controller
         $categories = ['opd' => 'OPD', 'ipd' => 'IPD', 'theatre' => 'OTD / Theatre', 'other' => 'Other'];
         $themesByCat = [];
         foreach ($categories as $catKey => $catLabel) {
-            foreach (['positive', 'negative'] as $sent) {
+            foreach (['positive', 'negative', 'neutral'] as $sent) {
                 $rows = $themeRaw->filter(fn($r) => $r->service_category === $catKey && $r->sentiment === $sent);
                 $total = $rows->sum('cnt');
                 $themesByCat[$catKey][$sent] = [
                     'total'  => $total,
                     'themes' => $rows->map(fn($r) => [
                         'key'   => $r->theme,
-                        'label' => Feedback::THEMES[$r->theme] ?? ucfirst((string)$r->theme),
+                        'label' => $r->theme ? (Feedback::THEMES[$r->theme] ?? ucfirst(str_replace('_', ' ', $r->theme))) : 'Unclassified',
                         'count' => $r->cnt,
                         'pct'   => $total > 0 ? round($r->cnt / $total * 100, 1) : 0,
                     ])->values()->toArray(),
@@ -134,7 +144,7 @@ class FeedbackReportController extends Controller
         $generalTotal = $generalRaw->sum('cnt');
         $generalThemes = $generalRaw->map(fn($r) => [
             'key'   => $r->theme,
-            'label' => Feedback::THEMES[$r->theme] ?? ucfirst((string)$r->theme),
+            'label' => $r->theme ? (Feedback::THEMES[$r->theme] ?? ucfirst(str_replace('_', ' ', $r->theme))) : 'Unclassified',
             'count' => $r->cnt,
             'pct'   => $generalTotal > 0 ? round($r->cnt / $generalTotal * 100, 1) : 0,
         ])->values()->toArray();
@@ -145,6 +155,7 @@ class FeedbackReportController extends Controller
             ->whereYear('created_at', $trendYear)
             ->when(!empty($filters['source']),       fn(Builder $q) => $q->where('source', $filters['source']))
             ->when(!empty($filters['department_id']),fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
+            ->when(!empty($filters['location']),     fn(Builder $q) => $q->where('location', $filters['location']))
             ->selectRaw('MONTH(created_at) as mo, sentiment, COUNT(*) as cnt')
             ->groupBy('mo', 'sentiment')
             ->orderBy('mo')
@@ -170,6 +181,7 @@ class FeedbackReportController extends Controller
             ->when(!empty($filters['year']),         fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
             ->when(!empty($filters['source']),       fn(Builder $q) => $q->where('source', $filters['source']))
             ->when(!empty($filters['department_id']),fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
+            ->when(!empty($filters['location']),     fn(Builder $q) => $q->where('location', $filters['location']))
             ->orderBy('created_at')
             ->get();
 
@@ -292,6 +304,13 @@ class FeedbackReportController extends Controller
         if (!empty($filters['month'])) $filterLabel .= '  |  Month: ' . ($monthNames[(int)$filters['month']] ?? $filters['month']);
         if (!empty($filters['year']))  $filterLabel .= '  |  Year: '  . $filters['year'];
         if (!empty($filters['source'])) $filterLabel .= '  |  Source: ' . (Feedback::SOURCES[$filters['source']] ?? $filters['source']);
+        if (!empty($filters['location'])) {
+            $locationLabels = Feedback::getLocations(false);
+            $filterLabel .= '  |  Location: ' . ($locationLabels[$filters['location']] ?? ucfirst((string)$filters['location']));
+        }
+        if (!empty($filters['department_id'])) {
+            $filterLabel .= '  |  Department: ' . (Department::find($filters['department_id'])?->name ?? $filters['department_id']);
+        }
 
         // ── Reusable: brand a sheet's top 2 rows ──
         $brandSheet = function (\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws, string $title, int $cols = 3) use ($hdrFill, $filterLabel) {
@@ -310,7 +329,8 @@ class FeedbackReportController extends Controller
         };
 
         // ── Reusable: write a labelled count/% table block ──
-        $writeBlock = function (\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws, int &$row, string $title, array $data, string $sent = '') use ($posFill, $negFill, $subFill, $altFill, $whtFill, $thinBdr) {
+        $writeBlock = function (\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws, int &$row, string $title, array $data, string $sent = '') use ($posFill, $negFill, $subFill, $altFill, $whtFill, $thinBdr): ?array {
+            $titleRow = $row;
             $titleFill  = $sent === 'positive' ? $posFill : ($sent === 'negative' ? $negFill : $subFill);
             $titleColor = $sent === 'positive' ? '065f46'  : ($sent === 'negative' ? '991b1b'  : 'FFFFFF');
             $ws->setCellValue('A' . $row, $title);
@@ -319,6 +339,7 @@ class FeedbackReportController extends Controller
             $ws->getRowDimension($row)->setRowHeight(18);
             $row++;
 
+            $headerRow = $row;
             $ws->fromArray(['THEME / LABEL', 'COUNTS', '%'], null, 'A' . $row);
             $ws->getStyle('A' . $row . ':C' . $row)->applyFromArray([
                 'font'      => ['bold' => true, 'size' => 9, 'color' => ['rgb' => 'FFFFFF']],
@@ -335,27 +356,123 @@ class FeedbackReportController extends Controller
                 $ws->getStyle('A' . $row)->applyFromArray(['font' => ['italic' => true, 'size' => 9, 'color' => ['rgb' => '94a3b8']]]);
                 $ws->getRowDimension($row)->setRowHeight(14);
                 $row += 2;
-                return;
+                return null;
             }
 
+            $dataStartRow = $row;
             foreach ($data as $i => $item) {
                 $fill = ($i % 2 === 0) ? $altFill : $whtFill;
-                $ws->fromArray([$item['label'], $item['count'], $item['pct'] . '%'], null, 'A' . $row);
+                $ws->fromArray([$item['label'], $item['count'], $item['pct'] / 100], null, 'A' . $row);
                 $ws->getStyle('A' . $row . ':C' . $row)->applyFromArray(['fill' => $fill, 'borders' => ['bottom' => $thinBdr], 'font' => ['size' => 9]]);
                 $ws->getStyle('B' . $row . ':C' . $row)->applyFromArray(['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER], 'font' => ['bold' => true, 'size' => 9]]);
+                $ws->getStyle('C' . $row)->getNumberFormat()->setFormatCode('0.0%');
                 $ws->getRowDimension($row)->setRowHeight(15);
                 $row++;
             }
+            $dataEndRow = $row - 1;
             $total = array_sum(array_column($data, 'count'));
-            $ws->fromArray(['GRAND TOTAL', $total, '100%'], null, 'A' . $row);
+            $ws->fromArray(['GRAND TOTAL', $total, 1], null, 'A' . $row);
             $ws->getStyle('A' . $row . ':C' . $row)->applyFromArray([
                 'font'      => ['bold' => true, 'size' => 9],
                 'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'eef7e8']],
                 'borders'   => ['top' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => '0b6b2c']]],
             ]);
             $ws->getStyle('B' . $row . ':C' . $row)->applyFromArray(['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]]);
+            $ws->getStyle('C' . $row)->getNumberFormat()->setFormatCode('0.0%');
             $ws->getRowDimension($row)->setRowHeight(16);
             $row += 2;
+
+            return compact('titleRow', 'headerRow', 'dataStartRow', 'dataEndRow');
+        };
+
+        $chartNumber = 0;
+        $sheetRef = static fn(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws): string => "'" . str_replace("'", "''", $ws->getTitle()) . "'!";
+
+        $addPieChart = function (\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws, string $title, ?array $block, string $topLeft, string $bottomRight, array $colors = []) use (&$chartNumber, $sheetRef): void {
+            if ($block === null) return;
+
+            $ref = $sheetRef($ws);
+            $count = $block['dataEndRow'] - $block['dataStartRow'] + 1;
+            $labels = [new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, $ref . '$B$' . $block['headerRow'], null, 1)];
+            $categories = [new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, $ref . '$A$' . $block['dataStartRow'] . ':$A$' . $block['dataEndRow'], null, $count)];
+            $values = [new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, $ref . '$B$' . $block['dataStartRow'] . ':$B$' . $block['dataEndRow'], NumberFormat::FORMAT_NUMBER, $count)];
+            if ($colors !== []) $values[0]->setFillColor($colors);
+            $series = new DataSeries(DataSeries::TYPE_PIECHART, null, [0], $labels, $categories, $values);
+            $layout = new Layout();
+            $layout->setShowPercent(true);
+            $layout->setShowCatName(true);
+            $plotArea = new PlotArea($layout, [$series]);
+            $legend = new ChartLegend(ChartLegend::POSITION_RIGHT, null, false);
+            $chart = new Chart('analytics_chart_' . (++$chartNumber), new ChartTitle($title), $legend, $plotArea, true, DataSeries::EMPTY_AS_GAP);
+            $chart->setTopLeftPosition($topLeft);
+            $chart->setBottomRightPosition($bottomRight);
+            $ws->addChart($chart);
+        };
+
+        $addBarChart = function (\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws, string $title, ?array $block, string $topLeft, string $bottomRight, string $color = '0B6B2C') use (&$chartNumber, $sheetRef): void {
+            if ($block === null) return;
+
+            $ref = $sheetRef($ws);
+            $count = $block['dataEndRow'] - $block['dataStartRow'] + 1;
+            $labels = [new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, $ref . '$B$' . $block['headerRow'], null, 1)];
+            $categories = [new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, $ref . '$A$' . $block['dataStartRow'] . ':$A$' . $block['dataEndRow'], null, $count)];
+            $values = [new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, $ref . '$B$' . $block['dataStartRow'] . ':$B$' . $block['dataEndRow'], NumberFormat::FORMAT_NUMBER, $count)];
+            $values[0]->setFillColor($color);
+            $series = new DataSeries(DataSeries::TYPE_BARCHART, DataSeries::GROUPING_CLUSTERED, [0], $labels, $categories, $values);
+            $series->setPlotDirection(DataSeries::DIRECTION_BAR);
+            $layout = new Layout();
+            $layout->setShowVal(true);
+            $plotArea = new PlotArea($layout, [$series]);
+            $plotArea->setGapWidth(55);
+            $categoryAxis = new ChartAxis();
+            $categoryAxis->setAxisOrientation(ChartAxis::ORIENTATION_REVERSED);
+            $chart = new Chart('analytics_chart_' . (++$chartNumber), new ChartTitle($title), null, $plotArea, true, DataSeries::EMPTY_AS_GAP, null, null, $categoryAxis);
+            $chart->setTopLeftPosition($topLeft);
+            $chart->setBottomRightPosition($bottomRight);
+            $ws->addChart($chart);
+        };
+
+        $addLineChart = function (\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws, string $title, int $headerRow, int $dataStartRow, int $dataEndRow, string $topLeft, string $bottomRight) use (&$chartNumber, $sheetRef): void {
+            $ref = $sheetRef($ws);
+            $count = $dataEndRow - $dataStartRow + 1;
+            $labels = [];
+            $values = [];
+            foreach (['B', 'C', 'D'] as $column) {
+                $labels[] = new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, $ref . '$' . $column . '$' . $headerRow, null, 1);
+                $values[] = new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, $ref . '$' . $column . '$' . $dataStartRow . ':$' . $column . '$' . $dataEndRow, NumberFormat::FORMAT_NUMBER, $count);
+            }
+            foreach (['0B8A38', 'DC3545', '64748B'] as $index => $color) {
+                $labels[$index]->setFillColor($color);
+            }
+            $categories = [new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, $ref . '$A$' . $dataStartRow . ':$A$' . $dataEndRow, null, $count)];
+            $series = new DataSeries(DataSeries::TYPE_LINECHART, DataSeries::GROUPING_STANDARD, [0, 1, 2], $labels, $categories, $values);
+            $plotArea = new PlotArea(null, [$series]);
+            $legend = new ChartLegend(ChartLegend::POSITION_BOTTOM, null, false);
+            $chart = new Chart('analytics_chart_' . (++$chartNumber), new ChartTitle($title), $legend, $plotArea, true, DataSeries::EMPTY_AS_ZERO);
+            $chart->setTopLeftPosition($topLeft);
+            $chart->setBottomRightPosition($bottomRight);
+            $ws->addChart($chart);
+        };
+
+        $prepareChartSheet = static function (\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws): void {
+            $ws->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+            $ws->getPageSetup()->setFitToWidth(1)->setFitToHeight(0);
+            foreach (range('E', 'P') as $column) $ws->getColumnDimension($column)->setWidth(11);
+        };
+
+        $writeChartedBlock = function (\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws, int &$row, string $title, array $data, string $sentiment) use ($writeBlock, $addBarChart): void {
+            $block = $writeBlock($ws, $row, $title, $data, $sentiment);
+            if ($block === null) return;
+
+            $colors = ['positive' => '0B8A38', 'negative' => 'DC3545', 'neutral' => '64748B'];
+            $chartTop = $block['titleRow'];
+            $pointCount = $block['dataEndRow'] - $block['dataStartRow'] + 1;
+            $chartBottom = $chartTop + max(13, $pointCount + 7);
+            $addBarChart($ws, $title, $block, 'E' . $chartTop, 'P' . $chartBottom, $colors[$sentiment] ?? '0B6B2C');
+
+            // Reserve the same vertical band for the table and its chart so the
+            // next section starts cleanly below both objects.
+            $row = max($row, $chartBottom + 2);
         };
 
         // ── Helper: build theme data for a category+sentiment ──
@@ -365,72 +482,146 @@ class FeedbackReportController extends Controller
                 ->groupBy('theme')->orderByDesc('cnt')->get();
             $tot = $rows->sum('cnt');
             return $rows->map(fn($r) => [
-                'label' => Feedback::THEMES[$r->theme] ?? ucfirst((string)$r->theme),
+                'label' => $r->theme ? (Feedback::THEMES[$r->theme] ?? ucfirst(str_replace('_', ' ', $r->theme))) : 'Unclassified',
                 'count' => $r->cnt,
                 'pct'   => $tot > 0 ? round($r->cnt / $tot * 100, 1) : 0,
             ])->values()->toArray();
         };
 
         // ════════════════════════════════════
-        // SHEET 1: Overview — Feedback Type + Collection Means
+        // SHEET 1: Overview — Feedback Type
         // ════════════════════════════════════
         $sh1 = $spreadsheet->getActiveSheet()->setTitle('Overview');
         $brandSheet($sh1, 'Analytics Overview');
+        $prepareChartSheet($sh1);
         $row = 4;
 
         $sentRaw  = $base()->selectRaw('sentiment, COUNT(*) as cnt')->groupBy('sentiment')->get();
         $sentTot  = $sentRaw->sum('cnt');
         $sentData = $sentRaw->map(fn($r) => ['label' => ucfirst($r->sentiment ?: 'Unknown'), 'count' => $r->cnt, 'pct' => $sentTot > 0 ? round($r->cnt / $sentTot * 100, 1) : 0])->values()->toArray();
-        $writeBlock($sh1, $row, 'FEEDBACK TYPE (SENTIMENT)', $sentData);
+        $sentimentBlock = $writeBlock($sh1, $row, 'FEEDBACK TYPE (SENTIMENT)', $sentData);
 
+        $sentimentColors = array_map(static fn(array $item): string => match (strtolower($item['label'])) {
+            'positive' => '0B8A38', 'negative' => 'DC3545', 'neutral' => '64748B', default => '3B82F6',
+        }, $sentData);
+        $addPieChart($sh1, 'FEEDBACK TYPE', $sentimentBlock, 'E4', 'P18', $sentimentColors);
+
+        // ════════════════════════════════════
+        // SHEET 2: Collection Means
+        // ════════════════════════════════════
+        $shCollection = $spreadsheet->createSheet()->setTitle('Collection Means');
+        $brandSheet($shCollection, 'Collection Means');
+        $prepareChartSheet($shCollection);
+        $row = 4;
         $srcRaw  = $base()->selectRaw('source, COUNT(*) as cnt')->groupBy('source')->orderByDesc('cnt')->get();
         $srcTot  = $srcRaw->sum('cnt');
         $srcData = $srcRaw->map(fn($r) => ['label' => Feedback::SOURCES[$r->source] ?? ucfirst((string)$r->source), 'count' => $r->cnt, 'pct' => $srcTot > 0 ? round($r->cnt / $srcTot * 100, 1) : 0])->values()->toArray();
-        $writeBlock($sh1, $row, 'COLLECTION MEANS', $srcData);
+        $collectionBlock = $writeBlock($shCollection, $row, 'COLLECTION MEANS', $srcData);
+        $sourcePalette = ['0B8A38', 'F59E0B', '198FB8', '7C5CC4', '64748B', 'DC3545', '94C83D', 'D97706'];
+        $addPieChart($shCollection, 'COLLECTION MEANS', $collectionBlock, 'E4', 'P20', array_slice($sourcePalette, 0, count($srcData)));
 
         // ════════════════════════════════════
-        // SHEET 2: General Customer Feedback
+        // SHEET 3: General Customer Feedback
         // ════════════════════════════════════
         $sh2 = $spreadsheet->createSheet()->setTitle('General Feedback');
         $brandSheet($sh2, 'General Customer Feedback');
+        $prepareChartSheet($sh2);
         $row = 4;
         $genRaw  = $base()->selectRaw('theme, COUNT(*) as cnt')->groupBy('theme')->orderByDesc('cnt')->get();
         $genTot  = $genRaw->sum('cnt');
-        $genData = $genRaw->map(fn($r) => ['label' => Feedback::THEMES[$r->theme] ?? ucfirst((string)$r->theme), 'count' => $r->cnt, 'pct' => $genTot > 0 ? round($r->cnt / $genTot * 100, 1) : 0])->values()->toArray();
-        $writeBlock($sh2, $row, 'GENERAL FEEDBACK — ALL THEMES', $genData);
+        $genData = $genRaw->map(fn($r) => ['label' => $r->theme ? (Feedback::THEMES[$r->theme] ?? ucfirst(str_replace('_', ' ', $r->theme))) : 'Unclassified', 'count' => $r->cnt, 'pct' => $genTot > 0 ? round($r->cnt / $genTot * 100, 1) : 0])->values()->toArray();
+        $generalBlock = $writeBlock($sh2, $row, 'GENERAL FEEDBACK — ALL THEMES', $genData);
+        $addBarChart($sh2, 'GENERAL FEEDBACK', $generalBlock, 'E4', 'P22', '0B6B2C');
 
         // ════════════════════════════════════
-        // SHEET 3: OPD
+        // SHEET 4: OPD
         // ════════════════════════════════════
         $sh3 = $spreadsheet->createSheet()->setTitle('OPD Feedback');
         $brandSheet($sh3, 'OPD Feedback');
+        $prepareChartSheet($sh3);
         $row = 4;
-        $writeBlock($sh3, $row, 'OPD POSITIVE FEEDBACK', $themeData('opd', 'positive'), 'positive');
-        $writeBlock($sh3, $row, 'OPD NEGATIVE FEEDBACK', $themeData('opd', 'negative'), 'negative');
+        $writeChartedBlock($sh3, $row, 'OPD POSITIVE FEEDBACK', $themeData('opd', 'positive'), 'positive');
+        $writeChartedBlock($sh3, $row, 'OPD NEGATIVE FEEDBACK', $themeData('opd', 'negative'), 'negative');
+        $writeChartedBlock($sh3, $row, 'OPD NEUTRAL FEEDBACK', $themeData('opd', 'neutral'), 'neutral');
 
         // ════════════════════════════════════
-        // SHEET 4: IPD
+        // SHEET 5: IPD
         // ════════════════════════════════════
         $sh4 = $spreadsheet->createSheet()->setTitle('IPD Feedback');
         $brandSheet($sh4, 'IPD Feedback');
+        $prepareChartSheet($sh4);
         $row = 4;
-        $writeBlock($sh4, $row, 'IPD POSITIVE FEEDBACK', $themeData('ipd', 'positive'), 'positive');
-        $writeBlock($sh4, $row, 'IPD NEGATIVE FEEDBACK', $themeData('ipd', 'negative'), 'negative');
+        $writeChartedBlock($sh4, $row, 'IPD POSITIVE FEEDBACK', $themeData('ipd', 'positive'), 'positive');
+        $writeChartedBlock($sh4, $row, 'IPD NEGATIVE FEEDBACK', $themeData('ipd', 'negative'), 'negative');
+        $writeChartedBlock($sh4, $row, 'IPD NEUTRAL FEEDBACK', $themeData('ipd', 'neutral'), 'neutral');
 
         // ════════════════════════════════════
-        // SHEET 5: OTD / Theatre
+        // SHEET 6: OTD / Theatre
         // ════════════════════════════════════
         $sh5 = $spreadsheet->createSheet()->setTitle('OTD Feedback');
         $brandSheet($sh5, 'OTD / Theatre Feedback');
+        $prepareChartSheet($sh5);
         $row = 4;
-        $writeBlock($sh5, $row, 'OTD POSITIVE FEEDBACK', $themeData('theatre', 'positive'), 'positive');
-        $writeBlock($sh5, $row, 'OTD NEGATIVE FEEDBACK', $themeData('theatre', 'negative'), 'negative');
+        $writeChartedBlock($sh5, $row, 'OTD POSITIVE FEEDBACK', $themeData('theatre', 'positive'), 'positive');
+        $writeChartedBlock($sh5, $row, 'OTD NEGATIVE FEEDBACK', $themeData('theatre', 'negative'), 'negative');
+        $writeChartedBlock($sh5, $row, 'OTD NEUTRAL FEEDBACK', $themeData('theatre', 'neutral'), 'neutral');
 
         // ════════════════════════════════════
-        // SHEET 6: Weekly Summary (raw rows)
+        // SHEET 7: Other / uncategorised feedback
+        // ════════════════════════════════════
+        $shOther = $spreadsheet->createSheet()->setTitle('Other Feedback');
+        $brandSheet($shOther, 'Other / Uncategorised Feedback');
+        $prepareChartSheet($shOther);
+        $row = 4;
+        $writeChartedBlock($shOther, $row, 'OTHER POSITIVE FEEDBACK', $themeData('other', 'positive'), 'positive');
+        $writeChartedBlock($shOther, $row, 'OTHER NEGATIVE FEEDBACK', $themeData('other', 'negative'), 'negative');
+        $writeChartedBlock($shOther, $row, 'OTHER NEUTRAL FEEDBACK', $themeData('other', 'neutral'), 'neutral');
+
+        // ════════════════════════════════════
+        // SHEET 8: Monthly trend
+        // ════════════════════════════════════
+        $trendYear = !empty($filters['year']) ? (int)$filters['year'] : now()->year;
+        $trendRaw = Feedback::query()
+            ->whereYear('created_at', $trendYear)
+            ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
+            ->when(!empty($filters['department_id']), fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
+            ->when(!empty($filters['location']),      fn(Builder $q) => $q->where('location', $filters['location']))
+            ->selectRaw('MONTH(created_at) as mo, sentiment, COUNT(*) as cnt')
+            ->groupBy('mo', 'sentiment')
+            ->get();
+        $trend = ['positive' => array_fill(0, 12, 0), 'negative' => array_fill(0, 12, 0), 'neutral' => array_fill(0, 12, 0)];
+        foreach ($trendRaw as $item) {
+            if (isset($trend[$item->sentiment])) $trend[$item->sentiment][$item->mo - 1] = $item->cnt;
+        }
+
+        $shTrend = $spreadsheet->createSheet()->setTitle('Monthly Trend');
+        $brandSheet($shTrend, 'Monthly Feedback Trend — ' . $trendYear, 4);
+        $prepareChartSheet($shTrend);
+        $shTrend->fromArray(['MONTH', 'POSITIVE', 'NEGATIVE', 'NEUTRAL'], null, 'A4');
+        $shTrend->getStyle('A4:D4')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 9, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => $subFill,
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+        $monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        foreach ($monthLabels as $index => $monthLabel) {
+            $trendRow = $index + 5;
+            $shTrend->fromArray([$monthLabel, $trend['positive'][$index], $trend['negative'][$index], $trend['neutral'][$index]], null, 'A' . $trendRow);
+            $shTrend->getStyle('A' . $trendRow . ':D' . $trendRow)->applyFromArray([
+                'fill' => ($index % 2 === 0) ? $altFill : $whtFill,
+                'borders' => ['bottom' => $thinBdr],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            ]);
+        }
+        $shTrend->getColumnDimension('A')->setWidth(14);
+        $shTrend->getColumnDimension('D')->setWidth(12);
+        $addLineChart($shTrend, 'MONTHLY FEEDBACK TREND — ' . $trendYear, 4, 5, 16, 'F4', 'P22');
+
+        // ════════════════════════════════════
+        // SHEET 9: Weekly Summary (raw rows)
         // ════════════════════════════════════
         $sh6 = $spreadsheet->createSheet()->setTitle('Weekly Summary');
-        $weeklyHeaders = ['Collection Means','Date','Month','Tel # of Person','Comment / Suggestion','Theme','Feedback Type','Sentiment','Wing','Unit','Platform'];
+        $weeklyHeaders = ['Collection Means','Date','Month','Location','Tel # of Person','Comment / Suggestion','Theme','Feedback Type','Sentiment','Wing','Unit','Satisfied?','Platform'];
         $lastWCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($weeklyHeaders));
         $brandSheet($sh6, 'General Submission Sheet — Weekly Summary', count($weeklyHeaders));
         $sh6->fromArray($weeklyHeaders, null, 'A4');
@@ -442,7 +633,7 @@ class FeedbackReportController extends Controller
         ]);
         $sh6->getRowDimension(4)->setRowHeight(18);
         // widen columns for weekly sheet
-        foreach ([14, 8, 12, 16, 50, 16, 14, 12, 12, 20, 14] as $i => $w) {
+        foreach ([14, 8, 12, 20, 16, 50, 20, 14, 12, 16, 24, 12, 14] as $i => $w) {
             $sh6->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1))->setWidth($w);
         }
 
@@ -451,14 +642,17 @@ class FeedbackReportController extends Controller
             ->when(!empty($filters['year']),          fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
             ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
             ->when(!empty($filters['department_id']), fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
+            ->when(!empty($filters['location']),      fn(Builder $q) => $q->where('location', $filters['location']))
             ->orderBy('created_at')->get();
 
+        $locationLabels = Feedback::getLocations(false);
         $wRow = 5;
         foreach ($weeklyFeedbacks as $f) {
             $sh6->fromArray([
                 $f->getSourceLabel(),
                 $f->created_at?->format('d') ?? '',
                 $f->created_at?->format('F') ?? '',
+                $locationLabels[$f->location] ?? ($f->location ? ucfirst((string)$f->location) : ''),
                 $f->phone ?? '',
                 $f->message ?? $f->overall_experience ?? '',
                 $f->getThemeLabel(),
@@ -466,6 +660,7 @@ class FeedbackReportController extends Controller
                 $f->getSentimentLabel(),
                 $f->getWingLabel(),
                 $f->department?->name ?? (is_array($f->service_units) ? implode(', ', $f->service_units) : ($f->service_units ?? '')),
+                is_null($f->product_satisfied) ? '' : ($f->product_satisfied ? 'Yes' : 'No'),
                 $f->getServiceCategoryLabel(),
             ], null, 'A' . $wRow);
             $sh6->getStyle('A' . $wRow . ':' . $lastWCol . $wRow)->applyFromArray([
@@ -476,12 +671,12 @@ class FeedbackReportController extends Controller
             $sh6->getRowDimension($wRow)->setRowHeight(15);
             $wRow++;
         }
-        $sh6->getStyle('E5:E' . max(5, $wRow - 1))->getAlignment()->setWrapText(true);
+        $sh6->getStyle('F5:F' . max(5, $wRow - 1))->getAlignment()->setWrapText(true);
         $sh6->freezePane('A5');
         $sh6->setAutoFilter('A4:' . $lastWCol . '4');
 
         // ════════════════════════════════════
-        // SHEET 7: Mabinti Centre Analytics
+        // SHEET 10: Mabinti Centre Analytics
         // ════════════════════════════════════
         $sh7 = $spreadsheet->createSheet()->setTitle('Mabinti Centre');
         $mabintiHeaders = ['Date','Feedback Type','Product \ Service','Other Product','Service Rating','Satisfied?','Satisfaction Comment','Overall Experience'];
@@ -537,6 +732,7 @@ class FeedbackReportController extends Controller
 
         $filename = 'CCBRT-Analytics-Report-' . now()->format('Ymd-His') . '.xlsx';
         $writer   = new Xlsx($spreadsheet);
+        $writer->setIncludeCharts(true);
         ob_start();
         $writer->save('php://output');
         $content = ob_get_clean();

@@ -278,7 +278,7 @@
                 <div class="cat-tab-content {{ $loop->first ? 'active' : '' }}" id="cat-{{ $catKey }}">
                     <div class="row g-3">
                         {{-- Positive --}}
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-lg-4">
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <span class="badge" style="background:#d1fae5;color:#065f46;font-size:10px;">Positive</span>
                                 <span class="text-muted small">{{ $themesByCat[$catKey]['positive']['total'] ?? 0 }} entries</span>
@@ -308,7 +308,7 @@
                             @endif
                         </div>
                         {{-- Negative --}}
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-lg-4">
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <span class="badge" style="background:#fee2e2;color:#991b1b;font-size:10px;">Negative</span>
                                 <span class="text-muted small">{{ $themesByCat[$catKey]['negative']['total'] ?? 0 }} entries</span>
@@ -335,6 +335,36 @@
                                 </table>
                             @else
                                 <p class="text-muted small fst-italic">No negative entries.</p>
+                            @endif
+                        </div>
+                        {{-- Neutral --}}
+                        <div class="col-12 col-lg-4">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="badge" style="background:#e5e7eb;color:#374151;font-size:10px;">Neutral</span>
+                                <span class="text-muted small">{{ $themesByCat[$catKey]['neutral']['total'] ?? 0 }} entries</span>
+                            </div>
+                            @if(!empty($themesByCat[$catKey]['neutral']['themes']))
+                                <table class="theme-table">
+                                    <thead><tr><th>Theme</th><th style="width:50px;">Count</th><th style="width:80px;">%</th></tr></thead>
+                                    <tbody>
+                                    @foreach($themesByCat[$catKey]['neutral']['themes'] as $t)
+                                    <tr>
+                                        <td>{{ $t['label'] }}</td>
+                                        <td class="fw-semibold">{{ $t['count'] }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-1">
+                                                <div class="pct-bar-wrap flex-grow-1">
+                                                    <div class="pct-bar" style="width:{{ $t['pct'] }}%;background:#64748b;"></div>
+                                                </div>
+                                                <span style="font-size:10px;color:#475569;min-width:30px;">{{ $t['pct'] }}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            @else
+                                <p class="text-muted small fst-italic">No neutral entries.</p>
                             @endif
                         </div>
                     </div>
