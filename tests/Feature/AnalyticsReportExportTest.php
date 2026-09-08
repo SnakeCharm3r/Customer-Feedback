@@ -74,6 +74,36 @@ class AnalyticsReportExportTest extends TestCase
         }
     }
 
+    public function test_dashboard_tables_share_the_exact_date_month_and_year_filters(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'is_active' => true,
+            'is_first_user' => true,
+        ]);
+
+        $june15 = $this->feedback('positive', 'opd', 'client_experience', 'CCBRT-FILTER-JUNE-15');
+        $june15->forceFill(['created_at' => '2026-06-15 10:00:00', 'updated_at' => '2026-06-15 10:00:00'])->save();
+
+        $june16 = $this->feedback('negative', 'ipd', 'waiting_time', 'CCBRT-FILTER-JUNE-16');
+        $june16->forceFill(['created_at' => '2026-06-16 10:00:00', 'updated_at' => '2026-06-16 10:00:00'])->save();
+
+        $july = $this->feedback('neutral', 'theatre', 'client_satisfaction', 'CCBRT-FILTER-JULY');
+        $july->forceFill(['created_at' => '2026-07-01 10:00:00', 'updated_at' => '2026-07-01 10:00:00'])->save();
+
+        $exactDate = $this->actingAs($admin)->get(route('reports.analytics', ['date' => '2026-06-15']));
+        $exactDate->assertOk()
+            ->assertSee('CCBRT-FILTER-JUNE-15')
+            ->assertDontSee('CCBRT-FILTER-JUNE-16')
+            ->assertDontSee('CCBRT-FILTER-JULY');
+
+        $monthAndYear = $this->actingAs($admin)->get(route('reports.analytics', ['month' => 6, 'year' => 2026]));
+        $monthAndYear->assertOk()
+            ->assertSee('CCBRT-FILTER-JUNE-15')
+            ->assertSee('CCBRT-FILTER-JUNE-16')
+            ->assertDontSee('CCBRT-FILTER-JULY');
+    }
+
     private function feedback(string $sentiment, string $category, string $theme, string $reference, string $location = 'hq'): Feedback
     {
         return Feedback::create([

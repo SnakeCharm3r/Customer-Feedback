@@ -84,17 +84,13 @@ class FeedbackReportController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
         abort_unless($user?->canViewReports() || $user?->canViewWeeklyReport(), 403);
+        $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
 
-        $filters = $request->only(['month', 'year', 'source', 'department_id', 'location']);
+        $filters = $this->analyticsFilters($request);
 
         // ── Base scoped query helper ──
         $base = function () use ($filters): Builder {
-            return Feedback::query()
-                ->when(!empty($filters['month']),        fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
-                ->when(!empty($filters['year']),         fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
-                ->when(!empty($filters['source']),       fn(Builder $q) => $q->where('source', $filters['source']))
-                ->when(!empty($filters['department_id']),fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
-                ->when(!empty($filters['location']),     fn(Builder $q) => $q->where('location', $filters['location']));
+            return $this->applyAnalyticsFilters(Feedback::query(), $filters);
         };
 
         // ── 1. Sentiment (Feedback Type) ──
@@ -139,23 +135,14 @@ class FeedbackReportController extends Controller
             }
         }
 
-        // ── 4. General feedback theme (all categories) ──
-        $generalRaw = $base()->selectRaw('theme, COUNT(*) as cnt')->groupBy('theme')->orderByDesc('cnt')->get();
-        $generalTotal = $generalRaw->sum('cnt');
-        $generalThemes = $generalRaw->map(fn($r) => [
-            'key'   => $r->theme,
-            'label' => $r->theme ? (Feedback::THEMES[$r->theme] ?? ucfirst(str_replace('_', ' ', $r->theme))) : 'Unclassified',
-            'count' => $r->cnt,
-            'pct'   => $generalTotal > 0 ? round($r->cnt / $generalTotal * 100, 1) : 0,
-        ])->values()->toArray();
-
-        // ── 5. Monthly trend (current year or filtered year) ──
-        $trendYear = !empty($filters['year']) ? (int)$filters['year'] : now()->year;
-        $trendRaw = Feedback::query()
-            ->whereYear('created_at', $trendYear)
-            ->when(!empty($filters['source']),       fn(Builder $q) => $q->where('source', $filters['source']))
-            ->when(!empty($filters['department_id']),fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
-            ->when(!empty($filters['location']),     fn(Builder $q) => $q->where('location', $filters['location']))
+        // ── 4. Monthly trend (current year or filtered year) ──
+        $trendYear = !empty($filters['year'])
+            ? (int)$filters['year']
+            : (!empty($filters['date']) ? (int)substr($filters['date'], 0, 4) : now()->year);
+        $trendRaw = $this->applyAnalyticsFilters(
+            Feedback::query()->whereYear('created_at', $trendYear),
+            $filters
+        )
             ->selectRaw('MONTH(created_at) as mo, sentiment, COUNT(*) as cnt')
             ->groupBy('mo', 'sentiment')
             ->orderBy('mo')
@@ -168,31 +155,26 @@ class FeedbackReportController extends Controller
             if (isset($trend[$r->sentiment])) $trend[$r->sentiment][$idx] = $r->cnt;
         }
 
-        // ── 6. Summary counts ──
+        // ── 5. Summary counts ──
         $totalAll     = $base()->count();
         $totalPositive = $base()->where('sentiment', 'positive')->count();
         $totalNegative = $base()->where('sentiment', 'negative')->count();
         $totalNeutral  = $base()->where('sentiment', 'neutral')->count();
 
-        // ── 7. Weekly summary rows ──
-        $weeklyRows = Feedback::query()
-            ->with(['department'])
-            ->when(!empty($filters['month']),        fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
-            ->when(!empty($filters['year']),         fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
-            ->when(!empty($filters['source']),       fn(Builder $q) => $q->where('source', $filters['source']))
-            ->when(!empty($filters['department_id']),fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
-            ->when(!empty($filters['location']),     fn(Builder $q) => $q->where('location', $filters['location']))
+        // ── 6. Weekly summary rows ──
+        $weeklyRows = $this->applyAnalyticsFilters(
+            Feedback::query()->with(['department']),
+            $filters
+        )
             ->orderBy('created_at')
             ->get();
 
         // ── 8. Mabinti Centre metrics ──
         $mabintiBase = function () use ($filters): Builder {
-            return Feedback::query()
-                ->where('location', 'mabinti')
-                ->when(!empty($filters['month']),         fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
-                ->when(!empty($filters['year']),          fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
-                ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
-                ->when(!empty($filters['department_id']), fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']));
+            return $this->applyAnalyticsFilters(
+                Feedback::query()->where('location', 'mabinti'),
+                $filters
+            );
         };
 
         $mabintiTotal       = $mabintiBase()->count();
@@ -214,11 +196,13 @@ class FeedbackReportController extends Controller
         }
 
         // Monthly Mabinti satisfaction trend
-        $mabintiTrendRaw = Feedback::query()
-            ->where('location', 'mabinti')
-            ->whereNotNull('product_satisfied')
-            ->whereYear('created_at', $trendYear)
-            ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
+        $mabintiTrendRaw = $this->applyAnalyticsFilters(
+            Feedback::query()
+                ->where('location', 'mabinti')
+                ->whereNotNull('product_satisfied')
+                ->whereYear('created_at', $trendYear),
+            $filters
+        )
             ->selectRaw('MONTH(created_at) as mo, product_satisfied, COUNT(*) as cnt')
             ->groupBy('mo', 'product_satisfied')
             ->orderBy('mo')
@@ -261,7 +245,7 @@ class FeedbackReportController extends Controller
 
         return view('reports.analytics', compact(
             'filters', 'sentiment', 'collectionMeans', 'themesByCat',
-            'generalThemes', 'generalTotal', 'trend', 'months', 'trendYear',
+            'trend', 'months', 'trendYear',
             'totalAll', 'totalPositive', 'totalNegative', 'totalNeutral',
             'categories', 'departments', 'availableYears', 'weeklyRows',
             'allLocations',
@@ -275,15 +259,11 @@ class FeedbackReportController extends Controller
     public function exportAnalyticsExcel(Request $request): \Symfony\Component\HttpFoundation\Response
     {
         abort_unless(Auth::user()?->canViewReports() || Auth::user()?->canViewWeeklyReport(), 403);
+        $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
 
-        $filters = $request->only(['month', 'year', 'source', 'department_id', 'location']);
+        $filters = $this->analyticsFilters($request);
         $base = function () use ($filters): Builder {
-            return Feedback::query()
-                ->when(!empty($filters['month']),         fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
-                ->when(!empty($filters['year']),          fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
-                ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
-                ->when(!empty($filters['department_id']), fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
-                ->when(!empty($filters['location']),      fn(Builder $q) => $q->where('location', $filters['location']));
+            return $this->applyAnalyticsFilters(Feedback::query(), $filters);
         };
 
         $spreadsheet = new Spreadsheet();
@@ -301,6 +281,7 @@ class FeedbackReportController extends Controller
         $monthNames = [1=>'January',2=>'February',3=>'March',4=>'April',5=>'May',6=>'June',
                        7=>'July',8=>'August',9=>'September',10=>'October',11=>'November',12=>'December'];
         $filterLabel = 'Generated: ' . now()->format('d M Y, H:i');
+        if (!empty($filters['date']))  $filterLabel .= '  |  Date: ' . \Carbon\Carbon::parse($filters['date'])->format('d M Y');
         if (!empty($filters['month'])) $filterLabel .= '  |  Month: ' . ($monthNames[(int)$filters['month']] ?? $filters['month']);
         if (!empty($filters['year']))  $filterLabel .= '  |  Year: '  . $filters['year'];
         if (!empty($filters['source'])) $filterLabel .= '  |  Source: ' . (Feedback::SOURCES[$filters['source']] ?? $filters['source']);
@@ -580,12 +561,13 @@ class FeedbackReportController extends Controller
         // ════════════════════════════════════
         // SHEET 8: Monthly trend
         // ════════════════════════════════════
-        $trendYear = !empty($filters['year']) ? (int)$filters['year'] : now()->year;
-        $trendRaw = Feedback::query()
-            ->whereYear('created_at', $trendYear)
-            ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
-            ->when(!empty($filters['department_id']), fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
-            ->when(!empty($filters['location']),      fn(Builder $q) => $q->where('location', $filters['location']))
+        $trendYear = !empty($filters['year'])
+            ? (int)$filters['year']
+            : (!empty($filters['date']) ? (int)substr($filters['date'], 0, 4) : now()->year);
+        $trendRaw = $this->applyAnalyticsFilters(
+            Feedback::query()->whereYear('created_at', $trendYear),
+            $filters
+        )
             ->selectRaw('MONTH(created_at) as mo, sentiment, COUNT(*) as cnt')
             ->groupBy('mo', 'sentiment')
             ->get();
@@ -637,12 +619,10 @@ class FeedbackReportController extends Controller
             $sh6->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1))->setWidth($w);
         }
 
-        $weeklyFeedbacks = Feedback::query()->with(['department'])
-            ->when(!empty($filters['month']),         fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
-            ->when(!empty($filters['year']),          fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
-            ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
-            ->when(!empty($filters['department_id']), fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
-            ->when(!empty($filters['location']),      fn(Builder $q) => $q->where('location', $filters['location']))
+        $weeklyFeedbacks = $this->applyAnalyticsFilters(
+            Feedback::query()->with(['department']),
+            $filters
+        )
             ->orderBy('created_at')->get();
 
         $locationLabels = Feedback::getLocations(false);
@@ -693,10 +673,10 @@ class FeedbackReportController extends Controller
         foreach ([16, 14, 30, 20, 14, 12, 40, 50] as $i => $w) {
             $sh7->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1))->setWidth($w);
         }
-        $mabintiFeedbacks = Feedback::query()
-            ->where('location', 'mabinti')
-            ->when(!empty($filters['month']),         fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
-            ->when(!empty($filters['year']),          fn(Builder $q) => $q->whereYear('created_at',  (int)$filters['year']))
+        $mabintiFeedbacks = $this->applyAnalyticsFilters(
+            Feedback::query()->where('location', 'mabinti'),
+            $filters
+        )
             ->orderBy('created_at')->get();
         $customLbls = \App\Models\LocationServiceItem::active()->pluck('label', 'key')->all();
         $mRow = 5;
@@ -796,6 +776,25 @@ class FeedbackReportController extends Controller
             'Content-Type'        => 'text/html; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    /**
+     * Keep every analytics card, table, chart and export on the same filter scope.
+     */
+    private function analyticsFilters(Request $request): array
+    {
+        return $request->only(['date', 'month', 'year', 'source', 'department_id', 'location']);
+    }
+
+    private function applyAnalyticsFilters(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(!empty($filters['date']),          fn(Builder $q) => $q->whereDate('created_at', $filters['date']))
+            ->when(!empty($filters['month']),         fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
+            ->when(!empty($filters['year']),          fn(Builder $q) => $q->whereYear('created_at', (int)$filters['year']))
+            ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
+            ->when(!empty($filters['department_id']), fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
+            ->when(!empty($filters['location']),      fn(Builder $q) => $q->where('location', $filters['location']));
     }
 
     private function buildQuery(Request $request): Builder

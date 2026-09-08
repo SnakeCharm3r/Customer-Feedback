@@ -16,7 +16,6 @@
     .analytics-chart { position: relative; width: 100%; min-width: 0; }
     .analytics-chart--donut { min-height: 290px; }
     .analytics-chart--trend { min-height: 320px; }
-    .analytics-chart--bar { min-height: 320px; }
     .analytics-chart-empty { display: flex; min-height: inherit; align-items: center; justify-content: center; flex-direction: column; gap: 8px; padding: 24px; color: var(--tb-text-muted,#878a99); text-align: center; }
     .analytics-chart-empty i { font-size: 28px; opacity: .55; }
     .analytics-chart-empty strong { color: var(--tb-heading-color,#1a1e2a); font-size: 13px; }
@@ -24,6 +23,36 @@
     .analytics-chart .apexcharts-canvas,
     .analytics-chart .apexcharts-svg { max-width: 100% !important; }
     .analytics-chart .apexcharts-legend-text { font-family: Poppins, Arial, sans-serif !important; }
+    .analytics-chart .apexcharts-tooltip,
+    .analytics-chart .apexcharts-tooltip.apexcharts-theme-light {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 8px 24px rgba(15,23,42,.18) !important;
+        color: #172033 !important;
+        opacity: 1 !important;
+    }
+    .analytics-chart .apexcharts-tooltip-series-group {
+        background: #ffffff !important;
+        color: #172033 !important;
+        padding: 9px 12px !important;
+    }
+    .analytics-chart .apexcharts-tooltip-text,
+    .analytics-chart .apexcharts-tooltip-text-y-label,
+    .analytics-chart .apexcharts-tooltip-text-y-value,
+    .analytics-chart .apexcharts-tooltip-text-z-label,
+    .analytics-chart .apexcharts-tooltip-text-z-value {
+        color: #172033 !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+    }
+    .analytics-chart .apexcharts-tooltip-title {
+        background: #f1f5f9 !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        color: #172033 !important;
+        font-weight: 700 !important;
+        padding: 8px 12px !important;
+    }
 
     .tab-pill { display: inline-flex; gap: 4px; background: var(--tb-light, #f3f6f9); border-radius: 8px; padding: 4px; }
     .tab-pill .tab-btn { border: none; background: transparent; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: var(--tb-text-muted, #878a99); cursor: pointer; transition: all .18s; }
@@ -36,19 +65,73 @@
     [data-bs-theme="dark"] .chart-card .chart-card-total { color: var(--dm-text, #e2e8f0); }
     [data-bs-theme="dark"] .analytics-chart-empty { color: var(--dm-text-muted,#94a3b8); }
     [data-bs-theme="dark"] .analytics-chart-empty strong { color: var(--dm-text,#e2e8f0); }
+    [data-bs-theme="dark"] .analytics-chart .apexcharts-tooltip,
+    [data-bs-theme="dark"] .analytics-chart .apexcharts-tooltip.apexcharts-theme-dark {
+        background: #172033 !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+        box-shadow: 0 8px 28px rgba(0,0,0,.45) !important;
+    }
+    [data-bs-theme="dark"] .analytics-chart .apexcharts-tooltip-series-group {
+        background: #172033 !important;
+        color: #f8fafc !important;
+    }
+    [data-bs-theme="dark"] .analytics-chart .apexcharts-tooltip-text,
+    [data-bs-theme="dark"] .analytics-chart .apexcharts-tooltip-text-y-label,
+    [data-bs-theme="dark"] .analytics-chart .apexcharts-tooltip-text-y-value,
+    [data-bs-theme="dark"] .analytics-chart .apexcharts-tooltip-text-z-label,
+    [data-bs-theme="dark"] .analytics-chart .apexcharts-tooltip-text-z-value {
+        color: #f8fafc !important;
+    }
+    [data-bs-theme="dark"] .analytics-chart .apexcharts-tooltip-title {
+        background: #0f172a !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
 
-    .cat-tab-content { display: none; }
-    .cat-tab-content.active { display: block; }
+    .themes-card-header { border-bottom: 1px solid var(--tb-border-color,#e9ebec); padding-bottom: 14px !important; }
+    .themes-card-subtitle { margin-top: 5px; font-size: 12px; color: var(--tb-text-muted,#878a99); }
+    .cat-tab-content, .sentiment-tab-content { display: none; }
+    .cat-tab-content.active, .sentiment-tab-content.active { display: block; }
+    .sentiment-tab-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 18px; background: var(--tb-light,#f8fafb); border-bottom: 1px solid var(--tb-border-color,#e9ebec); }
+    .sentiment-tab-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--tb-border-color,#dfe3e8); background: var(--tb-card-bg,#fff); color: var(--tb-body-color,#495057); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: border-color .18s, background .18s, color .18s, box-shadow .18s; }
+    .sentiment-tab-btn .sentiment-count { min-width: 24px; padding: 2px 7px; border-radius: 999px; background: var(--tb-light,#eef1f4); color: var(--tb-text-muted,#64748b); font-size: 10px; text-align: center; }
+    .sentiment-tab-btn[data-sentiment="positive"].active { border-color: #6ee7b7; background: #ecfdf5; color: #065f46; box-shadow: 0 1px 4px rgba(6,95,70,.10); }
+    .sentiment-tab-btn[data-sentiment="negative"].active { border-color: #fca5a5; background: #fef2f2; color: #991b1b; box-shadow: 0 1px 4px rgba(153,27,27,.10); }
+    .sentiment-tab-btn[data-sentiment="neutral"].active { border-color: #cbd5e1; background: #f1f5f9; color: #334155; box-shadow: 0 1px 4px rgba(51,65,85,.10); }
+    .theme-table-wrap { overflow-x: auto; }
 
-    .theme-table { width: 100%; font-size: 12px; border-collapse: collapse; }
-    .theme-table th { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--tb-text-muted,#878a99); padding: 6px 10px; border-bottom: 1px solid var(--tb-border-color,#e9ebec); }
-    .theme-table td { padding: 7px 10px; border-bottom: 1px solid var(--tb-border-color,#e9ebec); vertical-align: middle; }
+    .theme-table { width: 100%; min-width: 620px; font-size: 13px; border-collapse: collapse; }
+    .theme-table th { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--tb-text-muted,#878a99); padding: 11px 18px; border-bottom: 1px solid var(--tb-border-color,#e9ebec); background: var(--tb-card-bg,#fff); }
+    .theme-table td { padding: 12px 18px; border-bottom: 1px solid var(--tb-border-color,#e9ebec); vertical-align: middle; }
     .theme-table tr:last-child td { border-bottom: none; }
-    .pct-bar-wrap { background: var(--tb-light,#f3f6f9); border-radius: 999px; height: 6px; min-width: 60px; }
-    .pct-bar { height: 6px; border-radius: 999px; }
+    .theme-table tbody tr:hover { background: rgba(6,83,33,.025); }
+    .theme-table .theme-rank { width: 58px; color: var(--tb-text-muted,#878a99); }
+    .theme-table .theme-count { width: 110px; font-weight: 700; }
+    .theme-table .theme-share { width: 42%; min-width: 240px; }
+    .pct-bar-wrap { background: var(--tb-light,#f3f6f9); border-radius: 999px; height: 8px; min-width: 100px; }
+    .pct-bar { height: 8px; border-radius: 999px; }
+    .theme-empty { padding: 42px 20px; text-align: center; color: var(--tb-text-muted,#878a99); }
+    .theme-empty i { display: block; margin-bottom: 8px; font-size: 28px; opacity: .4; }
     [data-bs-theme="dark"] .pct-bar-wrap { background: rgba(255,255,255,0.08); }
     [data-bs-theme="dark"] .theme-table th { color: var(--dm-text-muted,#94a3b8); border-color: rgba(255,255,255,0.08); }
     [data-bs-theme="dark"] .theme-table td { border-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .themes-card-header, [data-bs-theme="dark"] .sentiment-tab-bar { border-color: rgba(255,255,255,0.08); }
+    [data-bs-theme="dark"] .sentiment-tab-bar { background: rgba(255,255,255,0.025); }
+    [data-bs-theme="dark"] .sentiment-tab-btn { border-color: rgba(255,255,255,.10); background: rgba(255,255,255,.04); color: var(--dm-text,#e2e8f0); }
+    [data-bs-theme="dark"] .sentiment-tab-btn[data-sentiment="positive"].active { background: rgba(6,95,70,.28); color: #6ee7b7; }
+    [data-bs-theme="dark"] .sentiment-tab-btn[data-sentiment="negative"].active { background: rgba(153,27,27,.25); color: #fca5a5; }
+    [data-bs-theme="dark"] .sentiment-tab-btn[data-sentiment="neutral"].active { background: rgba(100,116,139,.24); color: #cbd5e1; }
+
+    .weekly-summary-table th { white-space: nowrap; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--tb-text-muted,#878a99); }
+    .weekly-summary-table th i { font-size: 14px; vertical-align: -2px; }
+    .weekly-feedback-row { cursor: pointer; transition: background-color .15s; }
+    .weekly-feedback-row:focus { outline: 2px solid rgba(11,138,56,.45); outline-offset: -2px; }
+    .weekly-feedback-link { color: var(--tb-heading-color,#1a1e2a); text-decoration: none; }
+    .weekly-feedback-link:hover { color: #0b8a38; text-decoration: underline; }
+    .feedback-sentiment { display: block; margin-top: 5px; font-size: 10px; font-weight: 600; }
+    .feedback-sentiment i { font-size: 7px; vertical-align: 1px; }
+    [data-bs-theme="dark"] .weekly-feedback-link { color: var(--dm-text,#e2e8f0); }
 
     @media (max-width: 767.98px) {
         .chart-card .chart-card-header { align-items: flex-start; padding: 14px 14px 0; }
@@ -56,15 +139,17 @@
         .chart-card .chart-card-total { font-size: 18px; }
         .analytics-chart--donut { min-height: 310px; }
         .analytics-chart--trend { min-height: 300px; }
-        .analytics-chart--bar { min-height: 360px; }
         .tab-pill { width: 100%; overflow-x: auto; scrollbar-width: thin; }
         .tab-pill .tab-btn { flex: 0 0 auto; }
+        .themes-card-header { align-items: stretch !important; }
+        .sentiment-tab-bar { padding: 12px 14px; }
+        .sentiment-tab-btn { flex: 1 1 auto; justify-content: center; }
     }
 
     @media (max-width: 479.98px) {
         .analytics-chart--donut { min-height: 330px; }
         .analytics-chart--trend { min-height: 285px; }
-        .analytics-chart--bar { min-height: 390px; }
+        .sentiment-tab-btn { padding-inline: 10px; }
     }
 </style>
 
@@ -74,19 +159,14 @@
         <div class="page-title-box d-sm-flex align-items-center justify-content-between">
             <div>
                 <h4 class="mb-sm-0">Analytics Dashboard</h4>
-                <p class="text-muted mb-0 small mt-1">Consolidated feedback analytics — sentiment, collection means, themes by category and monthly trends.</p>
             </div>
-            <div class="page-title-right d-flex align-items-center gap-2">
+            <div class="page-title-right d-flex flex-wrap align-items-center gap-2 mt-3 mt-sm-0">
                 <a href="{{ route('reports.feedback.index') }}" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-table me-1"></i>Feedback Table
                 </a>
                 <a href="{{ route('reports.analytics.export.excel', request()->query()) }}" class="btn btn-sm btn-success">
                     <i class="bi bi-file-earmark-excel me-1"></i>Export Consolidated Excel
                 </a>
-                <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Analytics</li>
-                </ol>
             </div>
         </div>
     </div>
@@ -96,7 +176,12 @@
 <div class="analytics-filter-bar mb-4">
     <form method="GET" action="{{ route('reports.analytics') }}" id="analyticsForm">
         <div class="row g-2 align-items-end">
-            <div class="col-6 col-md-3 col-xl-2">
+            <div class="col-6 col-md-3 col-xl">
+                <label class="form-label small fw-semibold mb-1">Date</label>
+                <input type="date" name="date" class="form-control form-control-sm"
+                       value="{{ $filters['date'] ?? '' }}">
+            </div>
+            <div class="col-6 col-md-3 col-xl">
                 <label class="form-label small fw-semibold mb-1">Month</label>
                 <select name="month" class="form-select form-select-sm">
                     <option value="">All Months</option>
@@ -105,7 +190,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-xl-2">
+            <div class="col-6 col-md-3 col-xl">
                 <label class="form-label small fw-semibold mb-1">Year</label>
                 <select name="year" class="form-select form-select-sm">
                     <option value="">All Years</option>
@@ -114,7 +199,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-xl-2">
+            <div class="col-6 col-md-3 col-xl">
                 <label class="form-label small fw-semibold mb-1">Source</label>
                 <select name="source" class="form-select form-select-sm">
                     <option value="">All Sources</option>
@@ -123,7 +208,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-xl-2">
+            <div class="col-6 col-md-3 col-xl">
                 <label class="form-label small fw-semibold mb-1">Location</label>
                 <select name="location" class="form-select form-select-sm">
                     <option value="">All Locations</option>
@@ -132,7 +217,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-3 col-xl-2">
+            <div class="col-6 col-md-3 col-xl">
                 <label class="form-label small fw-semibold mb-1">Department</label>
                 <select name="department_id" class="form-select form-select-sm">
                     <option value="">All Departments</option>
@@ -246,225 +331,138 @@
     </div>
 </div>
 
-{{-- ── Row 3: General Feedback Themes ── --}}
+{{-- ── Themes by Service Category ── --}}
 <div class="row g-3 mb-3">
-    <div class="col-12 col-xl-5">
-        <div class="card chart-card h-100">
-            <div class="chart-card-header">
-                <div>
-                    <p class="chart-card-title">General Feedback</p>
-                    <div class="chart-card-total">{{ count($generalThemes) }} themes</div>
-                </div>
-            </div>
-            <div class="card-body pb-2">
-                <div id="chart-general-themes" class="analytics-chart analytics-chart--bar" aria-label="General feedback themes chart"></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-xl-7">
-        <div class="card chart-card h-100">
-            <div class="chart-card-header mb-3">
+    <div class="col-12">
+        <div class="card chart-card" id="themesServiceCard">
+            <div class="chart-card-header themes-card-header">
                 <div>
                     <p class="chart-card-title">Themes by Service Category</p>
+                    <p class="themes-card-subtitle mb-0">Choose a service and feedback sentiment to view its complete theme breakdown.</p>
                 </div>
-                <div class="tab-pill" id="catTabPill">
+                <div class="tab-pill" id="catTabPill" role="tablist" aria-label="Service categories">
                     @foreach($categories as $catKey => $catLabel)
-                        <button class="tab-btn {{ $loop->first ? 'active' : '' }}" data-cat="{{ $catKey }}">{{ $catLabel }}</button>
+                        <button type="button"
+                                class="tab-btn {{ $loop->first ? 'active' : '' }}"
+                                id="cat-tab-{{ $catKey }}"
+                                data-cat="{{ $catKey }}"
+                                role="tab"
+                                aria-selected="{{ $loop->first ? 'true' : 'false' }}"
+                                aria-controls="cat-{{ $catKey }}">{{ $catLabel }}</button>
                     @endforeach
                 </div>
             </div>
-            <div class="card-body pt-0">
-                @foreach($categories as $catKey => $catLabel)
-                <div class="cat-tab-content {{ $loop->first ? 'active' : '' }}" id="cat-{{ $catKey }}">
-                    <div class="row g-3">
-                        {{-- Positive --}}
-                        <div class="col-12 col-lg-4">
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <span class="badge" style="background:#d1fae5;color:#065f46;font-size:10px;">Positive</span>
-                                <span class="text-muted small">{{ $themesByCat[$catKey]['positive']['total'] ?? 0 }} entries</span>
-                            </div>
-                            @if(!empty($themesByCat[$catKey]['positive']['themes']))
-                                <table class="theme-table">
-                                    <thead><tr><th>Theme</th><th style="width:50px;">Count</th><th style="width:80px;">%</th></tr></thead>
-                                    <tbody>
-                                    @foreach($themesByCat[$catKey]['positive']['themes'] as $t)
-                                    <tr>
-                                        <td>{{ $t['label'] }}</td>
-                                        <td class="fw-semibold">{{ $t['count'] }}</td>
-                                        <td>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <div class="pct-bar-wrap flex-grow-1">
-                                                    <div class="pct-bar" style="width:{{ $t['pct'] }}%;background:#065f46;"></div>
-                                                </div>
-                                                <span style="font-size:10px;color:#065f46;min-width:30px;">{{ $t['pct'] }}%</span>
+            @foreach($categories as $catKey => $catLabel)
+            <div class="cat-tab-content {{ $loop->first ? 'active' : '' }}"
+                 id="cat-{{ $catKey }}"
+                 role="tabpanel"
+                 aria-labelledby="cat-tab-{{ $catKey }}">
+                <div class="sentiment-tab-bar" role="tablist" aria-label="{{ $catLabel }} feedback sentiment">
+                    @foreach(['positive' => 'Positive', 'negative' => 'Negative', 'neutral' => 'Neutral'] as $sentKey => $sentLabel)
+                        <button type="button"
+                                class="sentiment-tab-btn {{ $loop->first ? 'active' : '' }}"
+                                data-sentiment="{{ $sentKey }}"
+                                role="tab"
+                                aria-selected="{{ $loop->first ? 'true' : 'false' }}"
+                                aria-controls="themes-{{ $catKey }}-{{ $sentKey }}">
+                            {{ $sentLabel }}
+                            <span class="sentiment-count">{{ $themesByCat[$catKey][$sentKey]['total'] ?? 0 }}</span>
+                        </button>
+                    @endforeach
+                </div>
+
+                @foreach(['positive' => ['Positive', '#0b8a38'], 'negative' => ['Negative', '#dc3545'], 'neutral' => ['Neutral', '#64748b']] as $sentKey => [$sentLabel, $sentColor])
+                @php
+                    $themeGroup = $themesByCat[$catKey][$sentKey] ?? ['total' => 0, 'themes' => []];
+                @endphp
+                <div class="sentiment-tab-content {{ $loop->first ? 'active' : '' }}"
+                     id="themes-{{ $catKey }}-{{ $sentKey }}"
+                     role="tabpanel">
+                    @if(!empty($themeGroup['themes']))
+                    <div class="theme-table-wrap">
+                        <table class="theme-table">
+                            <thead>
+                                <tr>
+                                    <th class="theme-rank">#</th>
+                                    <th>Theme</th>
+                                    <th class="theme-count">Entries</th>
+                                    <th class="theme-share">% of {{ $sentLabel }} Feedback</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($themeGroup['themes'] as $theme)
+                                <tr>
+                                    <td class="theme-rank">{{ $loop->iteration }}</td>
+                                    <td class="fw-semibold">{{ $theme['label'] }}</td>
+                                    <td class="theme-count">{{ number_format($theme['count']) }}</td>
+                                    <td class="theme-share">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="pct-bar-wrap flex-grow-1" aria-hidden="true">
+                                                <div class="pct-bar" style="width:{{ $theme['pct'] }}%;background:{{ $sentColor }};"></div>
                                             </div>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                    </tbody>
-                                </table>
-                            @else
-                                <p class="text-muted small fst-italic">No positive entries.</p>
-                            @endif
-                        </div>
-                        {{-- Negative --}}
-                        <div class="col-12 col-lg-4">
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <span class="badge" style="background:#fee2e2;color:#991b1b;font-size:10px;">Negative</span>
-                                <span class="text-muted small">{{ $themesByCat[$catKey]['negative']['total'] ?? 0 }} entries</span>
-                            </div>
-                            @if(!empty($themesByCat[$catKey]['negative']['themes']))
-                                <table class="theme-table">
-                                    <thead><tr><th>Theme</th><th style="width:50px;">Count</th><th style="width:80px;">%</th></tr></thead>
-                                    <tbody>
-                                    @foreach($themesByCat[$catKey]['negative']['themes'] as $t)
-                                    <tr>
-                                        <td>{{ $t['label'] }}</td>
-                                        <td class="fw-semibold">{{ $t['count'] }}</td>
-                                        <td>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <div class="pct-bar-wrap flex-grow-1">
-                                                    <div class="pct-bar" style="width:{{ $t['pct'] }}%;background:#991b1b;"></div>
-                                                </div>
-                                                <span style="font-size:10px;color:#991b1b;min-width:30px;">{{ $t['pct'] }}%</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                    </tbody>
-                                </table>
-                            @else
-                                <p class="text-muted small fst-italic">No negative entries.</p>
-                            @endif
-                        </div>
-                        {{-- Neutral --}}
-                        <div class="col-12 col-lg-4">
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <span class="badge" style="background:#e5e7eb;color:#374151;font-size:10px;">Neutral</span>
-                                <span class="text-muted small">{{ $themesByCat[$catKey]['neutral']['total'] ?? 0 }} entries</span>
-                            </div>
-                            @if(!empty($themesByCat[$catKey]['neutral']['themes']))
-                                <table class="theme-table">
-                                    <thead><tr><th>Theme</th><th style="width:50px;">Count</th><th style="width:80px;">%</th></tr></thead>
-                                    <tbody>
-                                    @foreach($themesByCat[$catKey]['neutral']['themes'] as $t)
-                                    <tr>
-                                        <td>{{ $t['label'] }}</td>
-                                        <td class="fw-semibold">{{ $t['count'] }}</td>
-                                        <td>
-                                            <div class="d-flex align-items-center gap-1">
-                                                <div class="pct-bar-wrap flex-grow-1">
-                                                    <div class="pct-bar" style="width:{{ $t['pct'] }}%;background:#64748b;"></div>
-                                                </div>
-                                                <span style="font-size:10px;color:#475569;min-width:30px;">{{ $t['pct'] }}%</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                    </tbody>
-                                </table>
-                            @else
-                                <p class="text-muted small fst-italic">No neutral entries.</p>
-                            @endif
-                        </div>
+                                            <span class="fw-semibold" style="color:{{ $sentColor }};min-width:48px;text-align:right;">{{ $theme['pct'] }}%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
+                    @else
+                    <div class="theme-empty">
+                        <i class="bi bi-inbox" aria-hidden="true"></i>
+                        <div class="fw-semibold">No {{ strtolower($sentLabel) }} themes for {{ $catLabel }}</div>
+                        <div class="small mt-1">Try another sentiment, service category, or report filter.</div>
+                    </div>
+                    @endif
                 </div>
                 @endforeach
             </div>
+            @endforeach
         </div>
     </div>
 </div>
 
-{{-- ── General Feedback Data Table ── --}}
+{{-- ── General Summary Sub-View ── --}}
 <div class="row g-3 mb-3">
     <div class="col-12">
         <div class="card chart-card">
             <div class="chart-card-header mb-0 pb-3" style="border-bottom:1px solid var(--tb-border-color,#e9ebec);">
                 <div>
-                    <p class="chart-card-title">General Customer Feedback</p>
-                    <div class="chart-card-total" style="font-size:16px;">Theme breakdown — all categories</div>
-                </div>
-                <span class="badge bg-secondary-subtle text-secondary" style="font-size:10px;">{{ $generalTotal }} total entries</span>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="theme-table" style="width:100%;">
-                        <thead>
-                            <tr>
-                                <th class="ps-3">Theme</th>
-                                <th style="width:80px;">Count</th>
-                                <th style="width:120px;">% Share</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($generalThemes as $t)
-                            <tr>
-                                <td class="ps-3 fw-semibold">{{ $t['label'] }}</td>
-                                <td>{{ $t['count'] }}</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="pct-bar-wrap flex-grow-1">
-                                            <div class="pct-bar" style="width:{{ $t['pct'] }}%;background:#065321;"></div>
-                                        </div>
-                                        <span style="font-size:10px;color:#065321;min-width:34px;">{{ $t['pct'] }}%</span>
-                                    </div>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr><td colspan="3" class="text-center text-muted py-3 small fst-italic">No data for selected filters.</td></tr>
-                            @endforelse
-                            @if(!empty($generalThemes))
-                            <tr style="background:var(--tb-light,#f3f6f9);">
-                                <td class="ps-3 fw-bold small">GRAND TOTAL</td>
-                                <td class="fw-bold">{{ $generalTotal }}</td>
-                                <td class="fw-bold">100%</td>
-                            </tr>
-                            @endif
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-{{-- ── Weekly Summary Sub-View ── --}}
-<div class="row g-3 mb-3">
-    <div class="col-12">
-        <div class="card chart-card">
-            <div class="chart-card-header mb-0 pb-3" style="border-bottom:1px solid var(--tb-border-color,#e9ebec);">
-                <div>
-                    <p class="chart-card-title">Weekly Summary</p>
-                    <div class="chart-card-total" style="font-size:16px;">General Submission Sheet</div>
+                    <h2 class="chart-card-total mb-0" style="font-size:16px;">General Summary</h2>
                 </div>
                 <span class="badge bg-info-subtle text-info" style="font-size:10px;">{{ count($weeklyRows) }} records</span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive" style="max-height:420px;overflow-y:auto;">
-                    <table class="table table-hover align-middle mb-0" style="font-size:12px;">
+                    <table class="table table-hover align-middle mb-0 weekly-summary-table" id="weeklySummaryTable" style="font-size:12px;">
                         <thead class="sticky-top" style="background:var(--tb-card-bg,#fff);z-index:1;">
                             <tr>
-                                <th class="ps-3">Collection Means</th>
-                                <th>Date</th>
-                                <th>Month</th>
-                                <th>Location</th>
-                                <th>Tel #</th>
-                                <th style="min-width:220px;">Comment / Suggestion</th>
-                                <th>Theme</th>
-                                <th>Feedback Type</th>
-                                <th>Sentiment</th>
-                                <th>Wing</th>
-                                <th>Unit</th>
-                                <th>Satisfied?</th>
-                                <th class="pe-3">Platform</th>
+                                <th class="ps-3"><i class="bi bi-inboxes me-1" aria-hidden="true"></i>Collection Means</th>
+                                <th><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>Posting Date</th>
+                                <th><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>Location</th>
+                                <th class="text-center" title="Telephone number">
+                                    <i class="bi bi-telephone" aria-hidden="true"></i><span class="visually-hidden">Telephone number</span>
+                                </th>
+                                <th><i class="bi bi-tags me-1" aria-hidden="true"></i>Theme</th>
+                                <th class="pe-3"><i class="bi bi-chat-square-text me-1" aria-hidden="true"></i>Feedback</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($weeklyRows as $f)
-                            <tr>
-                                <td class="ps-3 fw-semibold">{{ $f->getSourceLabel() }}</td>
-                                <td>{{ $f->created_at?->format('d') }}</td>
-                                <td>{{ $f->created_at?->format('M') }}</td>
+                            <tr class="weekly-feedback-row"
+                                data-feedback-url="{{ route('feedback.admin.show', $f) }}"
+                                tabindex="0"
+                                role="link"
+                                aria-label="View feedback {{ $f->reference_no }}">
+                                <td class="ps-3 fw-semibold">
+                                    <a href="{{ route('feedback.admin.show', $f) }}" class="weekly-feedback-link">
+                                        {{ $f->getSourceLabel() }}
+                                        <i class="bi bi-arrow-up-right ms-1 small" aria-hidden="true"></i>
+                                    </a>
+                                    <span class="d-block text-muted fw-normal" style="font-size:10px;">{{ $f->reference_no }}</span>
+                                </td>
+                                <td class="text-nowrap">{{ $f->created_at?->format('d M Y') ?? '—' }}</td>
                                 @php $locLabel = \App\Models\Feedback::getLocations(false)[$f->location] ?? null; @endphp
                                 <td>
                                     @if($f->isMabinti())
@@ -475,40 +473,25 @@
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td class="text-muted">{{ $f->phone ?: '—' }}</td>
-                                <td class="text-muted">{{ \Illuminate\Support\Str::limit($f->message ?? $f->overall_experience ?? '', 100) }}</td>
+                                <td class="text-muted text-center text-nowrap">{{ $f->phone ?: '—' }}</td>
                                 <td><span class="badge bg-secondary-subtle text-secondary">{{ $f->getThemeLabel() }}</span></td>
-                                <td>
-                                    @php $ft = $f->getFeedbackTypeLabel(); @endphp
+                                <td class="pe-3">
+                                    @php
+                                        $ft = $f->getFeedbackTypeLabel();
+                                        $sent = $f->getSentimentLabel();
+                                        $sentColor = $sent === 'Positive' ? '#0b8a38' : ($sent === 'Negative' ? '#dc3545' : '#64748b');
+                                    @endphp
                                     <span class="badge" style="
                                         background:{{ $ft==='Complaint'?'#fee2e2':($ft==='Compliment'?'#d1fae5':($ft==='Suggestion'?'#dbeafe':'#f3e8ff')) }};
                                         color:{{ $ft==='Complaint'?'#991b1b':($ft==='Compliment'?'#065f46':($ft==='Suggestion'?'#1e40af':'#6b21a8')) }};
                                     ">{{ $ft }}</span>
+                                    <span class="feedback-sentiment" style="color:{{ $sentColor }};">
+                                        <i class="bi bi-circle-fill me-1" aria-hidden="true"></i>{{ $sent }} sentiment
+                                    </span>
                                 </td>
-                                <td>
-                                    @php $sent = $f->getSentimentLabel(); @endphp
-                                    <span class="badge" style="
-                                        background:{{ $sent==='Positive'?'#d1fae5':($sent==='Negative'?'#fee2e2':'#e5e7eb') }};
-                                        color:{{ $sent==='Positive'?'#065f46':($sent==='Negative'?'#991b1b':'#374151') }};
-                                    ">{{ $sent }}</span>
-                                </td>
-                                <td class="text-muted">{{ $f->getWingLabel() }}</td>
-                                <td class="text-muted">{{ $f->department?->name ?? (is_array($f->service_units) ? implode(', ', $f->service_units) : ($f->service_units ?? '—')) }}</td>
-                                <td>
-                                    @if($f->isMabinti() && !is_null($f->product_satisfied))
-                                        @if($f->product_satisfied)
-                                            <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Yes</span>
-                                        @else
-                                            <span class="badge bg-danger-subtle text-danger"><i class="bi bi-x-circle me-1"></i>No</span>
-                                        @endif
-                                    @else
-                                        <span class="text-muted">—</span>
-                                    @endif
-                                </td>
-                                <td class="pe-3 text-muted">{{ $f->getServiceCategoryLabel() }}</td>
                             </tr>
                             @empty
-                            <tr><td colspan="13" class="text-center py-4 text-muted">
+                            <tr><td colspan="6" class="text-center py-4 text-muted">
                                 <i class="bi bi-inbox d-block fs-2 mb-2 opacity-25"></i>No records for selected filters.
                             </td></tr>
                             @endforelse
@@ -529,13 +512,61 @@
     $colLabels = array_column($collectionMeans, 'label');
     $colCounts = array_column($collectionMeans, 'count');
     $colColors = ['#0b8a38','#f59e0b','#3b82f6','#8b5cf6','#64748b','#ef4444'];
-
-    $genLabels = array_column($generalThemes, 'label');
-    $genCounts = array_column($generalThemes, 'count');
 @endphp
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Service and sentiment tabs remain usable even if the chart library fails to load.
+    document.getElementById('themesServiceCard')?.addEventListener('click', function (event) {
+        const categoryButton = event.target.closest('#catTabPill .tab-btn');
+        if (categoryButton) {
+            document.querySelectorAll('#catTabPill .tab-btn').forEach(function (button) {
+                button.classList.remove('active');
+                button.setAttribute('aria-selected', 'false');
+            });
+            categoryButton.classList.add('active');
+            categoryButton.setAttribute('aria-selected', 'true');
+
+            document.querySelectorAll('#themesServiceCard .cat-tab-content').forEach(function (panel) {
+                panel.classList.remove('active');
+            });
+            document.getElementById('cat-' + categoryButton.dataset.cat)?.classList.add('active');
+            return;
+        }
+
+        const sentimentButton = event.target.closest('.sentiment-tab-btn');
+        if (!sentimentButton) return;
+
+        const categoryPanel = sentimentButton.closest('.cat-tab-content');
+        categoryPanel.querySelectorAll('.sentiment-tab-btn').forEach(function (button) {
+            button.classList.remove('active');
+            button.setAttribute('aria-selected', 'false');
+        });
+        sentimentButton.classList.add('active');
+        sentimentButton.setAttribute('aria-selected', 'true');
+
+        categoryPanel.querySelectorAll('.sentiment-tab-content').forEach(function (panel) {
+            panel.classList.remove('active');
+        });
+        document.getElementById(sentimentButton.getAttribute('aria-controls'))?.classList.add('active');
+    });
+
+    const openFeedbackRow = function (row) {
+        if (row?.dataset.feedbackUrl) window.location.href = row.dataset.feedbackUrl;
+    };
+    document.getElementById('weeklySummaryTable')?.addEventListener('click', function (event) {
+        if (event.target.closest('a')) return;
+        const row = event.target.closest('.weekly-feedback-row');
+        if (row) openFeedbackRow(row);
+    });
+    document.getElementById('weeklySummaryTable')?.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        const row = event.target.closest('.weekly-feedback-row');
+        if (!row) return;
+        event.preventDefault();
+        openFeedbackRow(row);
+    });
+
     if (typeof ApexCharts === 'undefined') return;
 
     const sentimentCounts = @json(array_values($sentCounts));
@@ -547,8 +578,6 @@ document.addEventListener('DOMContentLoaded', function () {
         { name: 'Negative', data: @json(array_values($trend['negative'])) },
         { name: 'Neutral', data: @json(array_values($trend['neutral'])) },
     ];
-    const themeLabels = @json(array_values($genLabels));
-    const themeCounts = @json(array_values($genCounts));
     const monthLabels = @json(array_values($months));
     const chartRegistry = [];
 
@@ -606,7 +635,13 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             theme: { mode: isDark() ? 'dark' : 'light' },
             grid: { borderColor: colors.grid, strokeDashArray: 4 },
-            tooltip: { theme: colors.tooltip },
+            tooltip: {
+                enabled: true,
+                theme: colors.tooltip,
+                fillSeriesColor: false,
+                marker: { show: true },
+                style: { fontSize: '12px', fontFamily: 'Poppins, Arial, sans-serif' },
+            },
             noData: { text: 'No data for the selected filters', style: { color: colors.text } },
         };
     };
@@ -655,7 +690,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                 },
             },
-            tooltip: { theme: theme.tooltip, y: { formatter: function (value) { return value + ' submission' + (value === 1 ? '' : 's'); } } },
+            tooltip: {
+                enabled: true,
+                theme: theme.tooltip,
+                fillSeriesColor: false,
+                marker: { show: true },
+                style: { fontSize: '12px', fontFamily: 'Poppins, Arial, sans-serif' },
+                y: { formatter: function (value) { return value + ' submission' + (value === 1 ? '' : 's'); } },
+            },
             responsive: [
                 { breakpoint: 768, options: { chart: { height: 310 }, legend: { fontSize: '10px', itemMargin: { horizontal: 6, vertical: 4 } }, plotOptions: { pie: { donut: { size: '66%' } } } } },
                 { breakpoint: 480, options: { chart: { height: 330 }, dataLabels: { enabled: false }, legend: { position: 'bottom', horizontalAlign: 'left' }, plotOptions: { pie: { donut: { size: '68%' } } } } },
@@ -702,44 +744,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 yaxis: { min: 0, forceNiceScale: true, decimalsInFloat: 0, labels: { formatter: function (value) { return Math.floor(value); }, style: { colors: [theme.text], fontSize: '10px' } } },
                 legend: { position: 'top', horizontalAlign: 'right', fontSize: '11px', labels: { colors: theme.text }, markers: { width: 9, height: 9, radius: 9 } },
-                tooltip: { shared: true, intersect: false, theme: theme.tooltip, y: { formatter: function (value) { return value + ' submission' + (value === 1 ? '' : 's'); } } },
+                tooltip: {
+                    enabled: true,
+                    shared: true,
+                    intersect: false,
+                    theme: theme.tooltip,
+                    fillSeriesColor: false,
+                    marker: { show: true },
+                    style: { fontSize: '12px', fontFamily: 'Poppins, Arial, sans-serif' },
+                    y: { formatter: function (value) { return value + ' submission' + (value === 1 ? '' : 's'); } },
+                },
                 responsive: [
                     { breakpoint: 768, options: { chart: { height: 300 }, legend: { position: 'bottom', horizontalAlign: 'center' }, stroke: { width: [2, 2, 2] }, markers: { size: 2 } } },
                     { breakpoint: 480, options: { chart: { height: 285 }, xaxis: { labels: { rotate: -45, rotateAlways: true, hideOverlappingLabels: true } }, grid: { padding: { left: 2, right: 5 } } } },
-                ],
-            });
-        }
-    );
-
-    registerChart(
-        '#chart-general-themes',
-        hasValues([themeCounts]),
-        'Theme distribution will appear after feedback is classified.',
-        function () {
-            const options = baseChart('bar', 320);
-            const theme = palette();
-            return Object.assign(options, {
-                series: [{ name: 'Entries', data: themeCounts }],
-                colors: ['#0b6b2c'],
-                plotOptions: { bar: { borderRadius: 5, borderRadiusApplication: 'end', columnWidth: '48%', distributed: false } },
-                dataLabels: { enabled: true, offsetY: -5, style: { fontSize: '10px', fontWeight: 600, colors: [theme.heading] }, background: { enabled: false } },
-                xaxis: {
-                    categories: themeLabels,
-                    axisBorder: { show: false },
-                    axisTicks: { show: false },
-                    labels: {
-                        rotate: -35,
-                        trim: true,
-                        hideOverlappingLabels: true,
-                        style: { colors: themeLabels.map(function () { return theme.text; }), fontSize: '9px' },
-                        formatter: function (value) { return String(value).length > 18 ? String(value).slice(0, 17) + '…' : value; },
-                    },
-                },
-                yaxis: { min: 0, forceNiceScale: true, decimalsInFloat: 0, labels: { formatter: function (value) { return Math.floor(value); }, style: { colors: [theme.text], fontSize: '10px' } } },
-                tooltip: { theme: theme.tooltip, x: { formatter: function (_, context) { return themeLabels[context.dataPointIndex] || ''; } }, y: { formatter: function (value) { return value + ' entr' + (value === 1 ? 'y' : 'ies'); } } },
-                responsive: [
-                    { breakpoint: 768, options: { chart: { height: Math.max(360, themeLabels.length * 42) }, plotOptions: { bar: { horizontal: true, barHeight: '58%', borderRadius: 4 } }, dataLabels: { offsetX: 8, offsetY: 0 }, xaxis: { categories: themeLabels, labels: { rotate: 0, style: { fontSize: '9px' } } }, yaxis: { labels: { maxWidth: 135, style: { fontSize: '9px' } } }, grid: { padding: { left: 4, right: 14 } } } },
-                    { breakpoint: 480, options: { chart: { height: Math.max(390, themeLabels.length * 46) }, yaxis: { labels: { maxWidth: 110, style: { fontSize: '9px' } } } } },
                 ],
             });
         }
@@ -752,17 +769,6 @@ document.addEventListener('DOMContentLoaded', function () {
             entry.chart.updateOptions(entry.optionsFactory(), false, true);
         });
     }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
-
-    // ── Category tab switching ──
-    document.getElementById('catTabPill')?.addEventListener('click', function (e) {
-        const btn = e.target.closest('.tab-btn');
-        if (!btn) return;
-        document.querySelectorAll('#catTabPill .tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const cat = btn.dataset.cat;
-        document.querySelectorAll('.cat-tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById('cat-' + cat)?.classList.add('active');
-    });
 });
 </script>
 @endsection
