@@ -64,6 +64,24 @@
     .dashboard-hero__actions .btn-light { color: var(--dash-green-900); }
     .dashboard-hero__actions .btn-outline-light { border-color: rgba(255,255,255,.5); color: #fff; }
 
+    .dashboard-period-filter {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.9rem 1rem;
+        border: 1px solid var(--dash-border);
+        border-radius: 11px;
+        background: #fff;
+        box-shadow: 0 7px 20px rgba(6,83,33,.045);
+    }
+    .dashboard-period-filter__copy { min-width: 0; }
+    .dashboard-period-filter__copy strong { display: block; color: var(--dash-ink); font-size: 0.78rem; }
+    .dashboard-period-filter__copy span { display: block; margin-top: 0.2rem; color: var(--dash-muted); font-size: 0.68rem; }
+    .dashboard-period-filter__controls { display: flex; align-items: end; gap: 0.55rem; flex-shrink: 0; }
+    .dashboard-period-filter__field { min-width: 175px; }
+    .dashboard-period-filter__field label { display: block; margin-bottom: 0.28rem; color: var(--dash-muted); font-size: 0.64rem; font-weight: 600; }
+
     .dashboard-alerts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
     .dashboard-alert {
         display: flex;
@@ -223,6 +241,7 @@
     }
     [data-bs-theme="dark"] .dashboard-alert,
     [data-bs-theme="dark"] .dashboard-settings,
+    [data-bs-theme="dark"] .dashboard-period-filter,
     [data-bs-theme="dark"] .dashboard-metric,
     [data-bs-theme="dark"] .dashboard-panel {
         background: var(--dm-bg-raised);
@@ -243,6 +262,9 @@
     [data-bs-theme="dark"] .dashboard-panel__heading h2,
     [data-bs-theme="dark"] .dashboard-settings h2 { color: var(--dm-text); }
     [data-bs-theme="dark"] .dashboard-settings p { color: var(--dash-muted) !important; }
+    [data-bs-theme="dark"] .dashboard-period-filter__copy strong { color: var(--dash-ink) !important; }
+    [data-bs-theme="dark"] .dashboard-period-filter__copy span,
+    [data-bs-theme="dark"] .dashboard-period-filter__field label { color: var(--dash-muted) !important; }
     [data-bs-theme="dark"] .dashboard-settings__icon,
     [data-bs-theme="dark"] .dashboard-panel__icon { color: #8fd067; }
     [data-bs-theme="dark"] .dashboard-metric { --metric-color: #78ca91; --metric-soft: rgba(120,202,145,.13); }
@@ -298,7 +320,8 @@
     @media (max-width: 767.98px) {
         .dashboard-page { gap: .8rem; }
         .dashboard-hero { min-height: 0; padding: 1.35rem; }
-        .dashboard-settings { align-items: flex-start; flex-direction: column; }
+        .dashboard-settings, .dashboard-period-filter { align-items: flex-start; flex-direction: column; }
+        .dashboard-period-filter__controls, .dashboard-period-filter__field { width: 100%; }
         .dashboard-metrics, .dashboard-grid--insights { grid-template-columns: 1fr; }
         .dashboard-grid--insights > :first-child { grid-column: auto; }
         .dashboard-metric__body { min-height: 126px; }
@@ -326,12 +349,30 @@
                 <a href="{{ route('feedback.manual.create') }}" class="btn btn-light d-inline-flex align-items-center">
                     <i class="bi bi-plus-circle me-2"></i>Add Feedback
                 </a>
-                <a href="{{ route('feedback.admin.index') }}" class="btn btn-outline-light d-inline-flex align-items-center">
+                <a href="{{ route('feedback.admin.index', $feedbackListFilters) }}" class="btn btn-outline-light d-inline-flex align-items-center">
                     <i class="bi bi-list-ul me-2"></i>All Submissions
                 </a>
             </div>
         @endif
     </section>
+
+    <form method="GET" action="{{ route('dashboard') }}" class="dashboard-period-filter" aria-label="Dashboard period filter">
+        <div class="dashboard-period-filter__copy">
+            <strong>Dashboard period: {{ $periodLabel }}</strong>
+            <span>{{ $periodDateLabel }}. All summary cards, breakdowns, trend data, and recent submissions use this period.</span>
+        </div>
+        <div class="dashboard-period-filter__controls">
+            <div class="dashboard-period-filter__field">
+                <label for="dashboard-period">Show submissions for</label>
+                <select name="period" id="dashboard-period" class="form-select form-select-sm">
+                    @foreach($periodOptions as $value => $label)
+                        <option value="{{ $value }}" @selected($period === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Apply</button>
+        </div>
+    </form>
 
     @if(($authUser->canManageUsers() && $pendingUsers > 0) || $urgentOpen > 0 || $pendingEscalations > 0)
         <div class="dashboard-alerts" aria-label="Items requiring attention">
@@ -377,15 +418,15 @@
             label="Total submissions"
             :value="$totalFeedback"
             icon="bi-chat-left-text"
-            :badge="$todayCount > 0 ? '+'.$todayCount.' today' : 'None today'"
-            :meta="$weekCount.' this week'"
+            :badge="$periodLabel"
+            :meta="$periodDateLabel"
         />
         <x-dashboard.metric-card
             label="Awaiting review"
             :value="$statusNew"
             icon="bi-inbox"
             tone="green"
-            :href="route('feedback.admin.index', ['status' => 'new'])"
+            :href="route('feedback.admin.index', array_merge($feedbackListFilters, ['status' => 'new']))"
             :badge="$statusNew > 0 ? 'Needs attention' : 'Queue is clear'"
             :meta="$statusOpen.' open · '.$statusUnderReview.' under review'"
         />
@@ -399,17 +440,17 @@
         />
         <x-dashboard.metric-card
             label="Priority open"
-            :value="$urgentOpen"
+            :value="$periodUrgentOpen"
             icon="bi-exclamation-triangle"
             tone="amber"
-            :href="route('feedback.admin.index', ['priority' => 1])"
-            :badge="$urgentOpen > 0 ? 'Requires attention' : 'No urgent items'"
+            :href="route('feedback.admin.index', array_merge($feedbackListFilters, ['priority' => 1]))"
+            :badge="$periodUrgentOpen > 0 ? 'Requires attention' : 'No urgent items'"
             :meta="$pendingEscalations.' escalation'.($pendingEscalations === 1 ? '' : 's').' pending'"
         />
     </section>
 
     <div class="dashboard-grid dashboard-grid--primary">
-        <x-dashboard.panel title="Submissions — Last 7 Days" icon="bi-graph-up-arrow">
+        <x-dashboard.panel :title="$chartTitle" icon="bi-graph-up-arrow">
             <x-slot:actions><span class="badge bg-primary-subtle text-primary">{{ array_sum($chartCounts) }} total</span></x-slot:actions>
             <div id="submissionsTrendChart" style="min-height:235px;"></div>
         </x-dashboard.panel>
@@ -429,7 +470,7 @@
                 <div class="dashboard-empty"><i class="bi bi-check2-all"></i><p>No open assignments for you.</p></div>
             @endforelse
             @if($myAssignments->isNotEmpty())
-                <x-slot:footer><div class="text-center"><a href="{{ route('feedback.admin.index') }}" class="small text-decoration-none">View all submissions <i class="bi bi-arrow-right ms-1"></i></a></div></x-slot:footer>
+                <x-slot:footer><div class="text-center"><a href="{{ route('feedback.admin.index', $feedbackListFilters) }}" class="small text-decoration-none">View all submissions <i class="bi bi-arrow-right ms-1"></i></a></div></x-slot:footer>
             @endif
         </x-dashboard.panel>
     </div>
@@ -452,7 +493,7 @@
                     @endphp
                     <div class="dashboard-breakdown__row" style="--row-color:{{ $type['color'] }};">
                         <div class="dashboard-breakdown__top">
-                            <a href="{{ route('feedback.admin.index', ['type' => $type['type']]) }}" class="dashboard-breakdown__label text-decoration-none"><i class="bi {{ $type['icon'] }}"></i>{{ $type['label'] }}</a>
+                            <a href="{{ route('feedback.admin.index', array_merge($feedbackListFilters, ['type' => $type['type']])) }}" class="dashboard-breakdown__label text-decoration-none"><i class="bi {{ $type['icon'] }}"></i>{{ $type['label'] }}</a>
                             <span class="dashboard-breakdown__numbers"><strong>{{ $type['count'] }}</strong> &nbsp;{{ $percentage }}%</span>
                         </div>
                         <div class="dashboard-breakdown__bar"><span style="width:{{ $percentage }}%"></span></div>
@@ -475,7 +516,7 @@
                 @php
                     $percentage = $totalFeedback > 0 ? (int) round(($status['count'] / $totalFeedback) * 100) : 0;
                 @endphp
-                <a href="{{ route('feedback.admin.index', ['status' => $status['status']]) }}" class="dashboard-pipeline__item" style="--status-color:{{ $status['color'] }};">
+                <a href="{{ route('feedback.admin.index', array_merge($feedbackListFilters, ['status' => $status['status']])) }}" class="dashboard-pipeline__item" style="--status-color:{{ $status['color'] }};">
                     <span class="dashboard-pipeline__label"><span class="dashboard-pipeline__dot"></span>{{ $status['label'] }}</span>
                     <span class="dashboard-pipeline__value"><strong>{{ $status['count'] }}</strong>{{ $percentage }}%</span>
                 </a>
@@ -503,10 +544,10 @@
         </x-dashboard.panel>
     </div>
 
-    <x-dashboard.panel title="Recent Submissions" icon="bi-clock-history" :flush="true">
+    <x-dashboard.panel :title="'Recent Submissions — '.$periodLabel" icon="bi-clock-history" :flush="true">
         <x-slot:actions>
             @if($authUser->canManageComplaints())
-                <a href="{{ route('feedback.admin.index') }}" class="btn btn-sm btn-outline-primary">View All <i class="bi bi-arrow-right ms-1"></i></a>
+                <a href="{{ route('feedback.admin.index', $feedbackListFilters) }}" class="btn btn-sm btn-outline-primary">View All <i class="bi bi-arrow-right ms-1"></i></a>
             @endif
         </x-slot:actions>
         <x-admin.table class="table-hover dashboard-table">
