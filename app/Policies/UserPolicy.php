@@ -20,9 +20,9 @@ class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        // Users can view their own profile
-        // Admins and QA HOD can view all users
-        return $user->id === $model->id || $user->canManageUsers();
+        // Personal account access belongs to the dedicated /profile screen.
+        // User-management details remain restricted to authorised managers.
+        return $user->canManageUsers();
     }
 
     /**
@@ -43,7 +43,7 @@ class UserPolicy
             return false;
         }
 
-        return $user->canManageUsers() || $user->id === $model->id;
+        return $user->canManageUsers();
     }
 
     /**

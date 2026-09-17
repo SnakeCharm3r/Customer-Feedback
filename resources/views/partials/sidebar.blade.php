@@ -6,7 +6,7 @@
     $sidebarPendingUsers = $sidebarUser?->canManageUsers()
         ? \App\Models\User::where('is_active', false)->where('is_first_user', false)->count()
         : 0;
-    $sidebarPendingEscalations = $sidebarUser?->canManageComplaints()
+    $sidebarPendingEscalations = $sidebarUser?->canViewEscalationMatrix()
         ? \App\Models\Escalation::where('status', 'pending')->count()
         : 0;
     $sidebarName = $sidebarUser?->getFullName() ?: $sidebarUser?->name ?: 'Account';
@@ -171,7 +171,7 @@
                         @endif
                     @endif
 
-                    @if($sidebarUser->canManageComplaints())
+                    @if($sidebarUser->canViewEscalationMatrix())
                         <li class="nav-item">
                             <a class="nav-link menu-link {{ request()->routeIs('escalations.index') ? 'active' : '' }}"
                                 href="{{ route('escalations.index') }}">

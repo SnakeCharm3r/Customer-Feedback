@@ -41,6 +41,7 @@ class User extends Authenticatable
 
     const REPORT_ROLES = [
         self::ROLE_ADMIN,
+        self::ROLE_QA_OFFICER,
         self::ROLE_COO,
         self::ROLE_LINE_MANAGER,
     ];
@@ -197,6 +198,13 @@ class User extends Authenticatable
     public function canViewWeeklyReport(): bool
     {
         return in_array($this->role, self::FEEDBACK_MANAGEMENT_ROLES, true);
+    }
+
+    public function canViewEscalationMatrix(): bool
+    {
+        return $this->canManageComplaints()
+            || $this->isQAOfficer()
+            || $this->isQAHod();
     }
 
     public function canApproveUsers(): bool

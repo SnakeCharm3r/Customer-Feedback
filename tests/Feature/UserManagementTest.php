@@ -31,7 +31,7 @@ class UserManagementTest extends TestCase
         $response = $this->actingAs($admin)->get(route('users.pending'));
 
         $response->assertOk();
-        $response->assertSee('Users Awaiting Approval');
+        $response->assertSee('Pending Approvals');
         $response->assertSee($pendingUser->email);
     }
 

@@ -22,7 +22,7 @@ class EscalationController extends Controller
 
     public function index(Request $request): View
     {
-        abort_unless(Auth::user()?->canManageComplaints(), 403);
+        abort_unless(Auth::user()?->canViewEscalationMatrix(), 403);
 
         $escalations = Escalation::with(['feedback', 'hod', 'escalatedBy'])
             ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
