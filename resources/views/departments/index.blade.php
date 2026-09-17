@@ -36,7 +36,7 @@
 
     <div class="card">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0 align-middle">
+            <x-admin.table class="table-hover">
                 <thead class="table-light">
                     <tr>
                         <th class="ps-3">Department Name</th>
@@ -108,7 +108,7 @@
                     </tr>
                     @endforelse
                 </tbody>
-            </table>
+            </x-admin.table>
         </div>
         @if($departments->hasPages())
         <div class="card-footer">

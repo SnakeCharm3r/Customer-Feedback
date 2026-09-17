@@ -1,8 +1,8 @@
 @php
     $authUser = auth()->user();
     $pendingCount = \App\Models\User::where('is_active', false)->where('is_first_user', false)->count();
-    $newFeedbackCount = \App\Models\Feedback::where('status', 'new')->count();
-    $latestNewFeedback = \App\Models\Feedback::where('status', 'new')->latest()->limit(5)->get();
+    $newFeedbackCount = \App\Models\Feedback::freshNew()->count();
+    $latestNewFeedback = \App\Models\Feedback::freshNew()->latest()->limit(5)->get();
     $canReviewPendingUsers = $authUser && ($authUser->isAdmin() || $authUser->isQAHod());
 @endphp
 <style>
@@ -57,11 +57,13 @@
                 </div>
 
                 <button type="button"
-                    class="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger shadow-none"
-                    id="topnav-hamburger-icon">
-                    <span class="hamburger-icon">
-                        <span></span><span></span><span></span>
-                    </span>
+                    class="btn header-item vertical-menu-btn topnav-hamburger admin-sidebar-toggle shadow-none"
+                    id="topnav-hamburger-icon"
+                    aria-label="Toggle navigation sidebar"
+                    aria-controls="navbar-nav"
+                    aria-expanded="true"
+                    title="Toggle navigation sidebar">
+                    <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i>
                 </button>
             </div>
 

@@ -128,8 +128,7 @@
 {{-- ── HOD Table ───────────────────────────────────────────────────────── --}}
 <div class="card">
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" style="font-size:13px;">
+        <x-admin.table class="table-hover" style="font-size:13px;">
                 <thead style="background:#f8f9fa;">
                     <tr>
                         <th class="ps-3 py-3 fw-semibold text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">#</th>
@@ -260,8 +259,7 @@
                     </tr>
                     @endforelse
                 </tbody>
-            </table>
-        </div>
+        </x-admin.table>
     </div>
 
     <div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">

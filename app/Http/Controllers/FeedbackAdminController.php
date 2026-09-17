@@ -31,7 +31,11 @@ class FeedbackAdminController extends Controller
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            match ($request->status) {
+                'new'  => $query->freshNew(),
+                'open' => $query->agedOpen(),
+                default => $query->where('status', $request->status),
+            };
         }
 
         if ($request->filled('type')) {
@@ -71,7 +75,8 @@ class FeedbackAdminController extends Controller
         $feedbacks = $query->paginate(20)->withQueryString();
 
         $counts = [
-            'new'          => Feedback::where('status', 'new')->count(),
+            'new'          => Feedback::freshNew()->count(),
+            'open'         => Feedback::agedOpen()->count(),
             'under_review' => Feedback::where('status', 'under_review')->count(),
             'responded'    => Feedback::where('status', 'responded')->count(),
             'closed'       => Feedback::where('status', 'closed')->count(),
@@ -92,6 +97,14 @@ class FeedbackAdminController extends Controller
     public function show(Feedback $feedback): View
     {
         abort_unless(Auth::user()?->canManageComplaints(), 403);
+
+        if ($feedback->status === 'new') {
+            $feedback->update([
+                'status' => 'under_review',
+                'reviewed_by' => Auth::id(),
+                'reviewed_at' => now(),
+            ]);
+        }
 
         $feedback->load(['assignedTo', 'reviewedBy', 'internalNotes.author', 'patientResponses.sender']);
 

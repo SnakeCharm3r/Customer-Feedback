@@ -140,11 +140,11 @@
     col.col-type     { width: 74px; }
     col.col-category { width: 108px; }
     col.col-report   { width: auto; }
-    col.col-theme    { width: 88px; }
+    col.col-details  { width: 112px; }
     col.col-sent     { width: 74px; }
-    col.col-wing     { width: 64px; }
     col.col-dept     { width: 96px; }
     col.col-reviewer { width: 108px; }
+    col.col-timing   { width: 94px; }
     col.col-reviewed { width: 78px; }
     col.col-submitted{ width: 78px; }
 
@@ -239,6 +239,8 @@
     .badge-neg { background:#fee2e2; color:#991b1b; }
     .badge-neu { background:#e5e7eb; color:#374151; }
     .badge-src { background:#dbeafe; color:#1d4ed8; }
+    .badge-delay { background:#fee2e2; color:#991b1b; white-space:normal; }
+    .badge-on-time { background:#d1fae5; color:#065f46; }
 
     .reviewer-name { font-weight: 600; color: #1e293b; }
     .reviewer-role { font-size: 9px; color: #94a3b8; }
@@ -293,20 +295,17 @@
         </div>
         <div class="meta-right">
             <strong>Generated:</strong> {{ now()->format('d M Y, H:i') }}<br>
-            @if(!empty($filters['year']))<strong>Year:</strong> {{ $filters['year'] }}<br>@endif
-            @if(!empty($filters['month']))<strong>Month:</strong> {{ [1=>'January',2=>'February',3=>'March',4=>'April',5=>'May',6=>'June',7=>'July',8=>'August',9=>'September',10=>'October',11=>'November',12=>'December'][(int)$filters['month']] ?? $filters['month'] }}<br>@endif
             <strong>Total Records:</strong> {{ count($feedbacks) }}
         </div>
     </div>
 
     {{-- ── Active Filters ── --}}
-    @if(!empty(array_filter($filters ?? [])))
+    @if(!empty($filterLabels))
     <div class="filters-strip">
         <span class="filter-label">Filters:</span>
-        @if(!empty($filters['feedback_type']))<span class="filter-chip">Type: {{ ucfirst($filters['feedback_type']) }}</span>@endif
-        @if(!empty($filters['status']))<span class="filter-chip">Status: {{ ucfirst($filters['status']) }}</span>@endif
-        @if(!empty($filters['source']))<span class="filter-chip">Source: {{ ucfirst($filters['source']) }}</span>@endif
-        @if(!empty($filters['search']))<span class="filter-chip">Search: {{ $filters['search'] }}</span>@endif
+        @foreach($filterLabels as $label => $value)
+            <span class="filter-chip">{{ $label }}: {{ $value }}</span>
+        @endforeach
     </div>
     @endif
 
@@ -347,9 +346,9 @@
     <table class="data-table">
         <colgroup>
             <col class="col-ref"><col class="col-source"><col class="col-type">
-            <col class="col-category"><col class="col-report"><col class="col-theme">
-            <col class="col-sent"><col class="col-wing"><col class="col-dept">
-            <col class="col-reviewer"><col class="col-reviewed"><col class="col-submitted">
+            <col class="col-category"><col class="col-report"><col class="col-details">
+            <col class="col-sent"><col class="col-dept"><col class="col-reviewer">
+            <col class="col-timing"><col class="col-reviewed"><col class="col-submitted">
         </colgroup>
         <thead>
             <tr>
@@ -358,11 +357,11 @@
                 <th>Type</th>
                 <th>Service Category</th>
                 <th>Report Excerpt</th>
-                <th>Theme</th>
+                <th>Ward / Theme / Location</th>
                 <th>Sentiment</th>
-                <th>Wing</th>
                 <th>Department</th>
-                <th>Reviewer</th>
+                <th>Reviewer / Responsible</th>
+                <th>Review Timing</th>
                 <th>Date Reviewed</th>
                 <th>Submitted</th>
             </tr>
@@ -372,7 +371,7 @@
             <tr>
                 <td>
                     <span class="ref-code">{{ $f->reference_no }}</span>
-                    <span class="ref-sub">{{ $f->getStatusLabel() }}</span>
+                    <span class="ref-sub">{{ $f->getTableStatusLabel() }}</span>
                 </td>
                 <td><span class="badge badge-src">{{ $f->getSourceLabel() }}</span></td>
                 <td>
@@ -388,7 +387,11 @@
                 </td>
                 <td>{{ $f->getServiceCategoryLabel() }}</td>
                 <td>{{ \Illuminate\Support\Str::limit($f->report_excerpt, 110) ?: '—' }}</td>
-                <td>{{ $f->getThemeLabel() ?: '—' }}</td>
+                <td>
+                    <div>{{ $f->getWingLabel() === '—' ? 'No ward specified' : $f->getWingLabel() }}</div>
+                    <div class="date-sub">{{ $f->getThemeLabel() === '—' ? 'No theme' : $f->getThemeLabel() }}</div>
+                    <div class="date-sub">{{ $locationLabels[$f->location] ?? ($f->location ? ucfirst(str_replace('_', ' ', $f->location)) : 'No location') }}</div>
+                </td>
                 <td>
                     @if($f->sentiment === 'positive')     <span class="badge badge-pos">Positive</span>
                     @elseif($f->sentiment === 'negative') <span class="badge badge-neg">Negative</span>
@@ -396,7 +399,6 @@
                     @else —
                     @endif
                 </td>
-                <td>{{ $f->getWingLabel() ?: '—' }}</td>
                 <td>{{ $f->department?->name ?? '—' }}</td>
                 <td>
                     @if($f->reviewedBy)
@@ -404,6 +406,13 @@
                         <div class="reviewer-role">{{ $f->reviewedBy->getRoleLabel() }}</div>
                     @else
                         <span style="color:#94a3b8;">Not reviewed</span>
+                    @endif
+                    <div class="reviewer-role">Responsible: {{ $f->assignedTo?->getFullName() ?? 'Unassigned' }}</div>
+                </td>
+                <td>
+                    <span class="badge {{ $f->isReviewDelayed() ? 'badge-delay' : 'badge-on-time' }}">{{ $f->getReviewDelayLabel() }}</span>
+                    @if($f->isReviewDelayed())
+                        <div class="reviewer-role">Owner: {{ $f->getReviewDelayOwnerLabel() }}</div>
                     @endif
                 </td>
                 <td>

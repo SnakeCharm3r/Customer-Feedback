@@ -1,13 +1,21 @@
 @extends('layouts.app')
 @section('title', 'Analytics Dashboard')
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+@endpush
+
 @section('content')
 <style>
     .analytics-stat-card { border-radius: 10px; padding: 16px 20px; border: 1px solid transparent; }
     .analytics-stat-card .stat-val { font-size: 28px; font-weight: 800; line-height: 1; }
     .analytics-stat-card .stat-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; opacity: .7; margin-top: 4px; }
 
-    .analytics-filter-bar { background: var(--tb-card-bg, #fff); border: 1px solid var(--tb-border-color, #e9ebec); border-radius: 8px; padding: 14px 18px; }
+    .analytics-filter-bar { background: var(--app-surface, #fff); border: 1px solid var(--app-border, #e9ebec); border-radius: 8px; padding: 14px 18px; }
 
     .chart-card { overflow: hidden; border-radius: 10px; }
     .chart-card .chart-card-header { padding: 14px 18px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
@@ -60,7 +68,48 @@
 
     [data-bs-theme="dark"] .tab-pill { background: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .tab-pill .tab-btn.active { background: rgba(255,255,255,0.10); color: #5bbf7a; box-shadow: none; }
-    [data-bs-theme="dark"] .analytics-filter-bar { border-color: rgba(255,255,255,0.08); }
+    [data-bs-theme="dark"] .analytics-filter-bar {
+        border-color: #344239;
+        background: #202923;
+        box-shadow: 0 1px 2px rgba(0,0,0,.16);
+    }
+    [data-bs-theme="dark"] .analytics-filter-bar .form-label { color: #bdc9c0; }
+    [data-bs-theme="dark"] .analytics-filter-bar .form-control,
+    [data-bs-theme="dark"] .analytics-filter-bar .form-select,
+    [data-bs-theme="dark"] .analytics-filter-bar .input-group-text {
+        border-color: #435148 !important;
+        background-color: #2b352f !important;
+        color: #e4ece6 !important;
+        box-shadow: none !important;
+    }
+    [data-bs-theme="dark"] .analytics-filter-bar .form-control::placeholder { color: #96a39a; opacity: 1; }
+    [data-bs-theme="dark"] .analytics-filter-bar .form-select option { background: #202923; color: #e4ece6; }
+    [data-bs-theme="dark"] .analytics-filter-bar .input-group-text { color: #aebbb2 !important; }
+    [data-bs-theme="dark"] .analytics-filter-bar .form-control:focus,
+    [data-bs-theme="dark"] .analytics-filter-bar .form-select:focus {
+        border-color: #6e9c58 !important;
+        background-color: #303c34 !important;
+        box-shadow: 0 0 0 2px rgba(148,200,61,.12) !important;
+    }
+    [data-bs-theme="dark"] .analytics-filter-bar .btn-outline-secondary {
+        border-color: #526158;
+        background: #2b352f;
+        color: #cbd6ce;
+    }
+    [data-bs-theme="dark"] .analytics-filter-bar .btn-outline-secondary:hover {
+        border-color: #6e7e73;
+        background: #344139;
+        color: #fff;
+    }
+    .monthly-report-modal .modal-content { border: 1px solid var(--app-border, #e2e8f0); }
+    .monthly-report-modal .modal-header,
+    .monthly-report-modal .modal-footer { border-color: var(--app-border, #e2e8f0); }
+    [data-bs-theme="dark"] .monthly-report-modal .modal-content { border-color: #435148; background: #202923; color: #e4ece6; }
+    [data-bs-theme="dark"] .monthly-report-modal .modal-header,
+    [data-bs-theme="dark"] .monthly-report-modal .modal-footer { border-color: #344239; }
+    [data-bs-theme="dark"] .monthly-report-modal .form-label { color: #bdc9c0; }
+    [data-bs-theme="dark"] .monthly-report-modal .form-select { border-color: #435148; background-color: #2b352f; color: #e4ece6; }
+    [data-bs-theme="dark"] .monthly-report-modal .form-select option { background: #202923; color: #e4ece6; }
     [data-bs-theme="dark"] .chart-card .chart-card-title { color: var(--dm-text-muted, #94a3b8); }
     [data-bs-theme="dark"] .chart-card .chart-card-total { color: var(--dm-text, #e2e8f0); }
     [data-bs-theme="dark"] .analytics-chart-empty { color: var(--dm-text-muted,#94a3b8); }
@@ -132,6 +181,73 @@
     .feedback-sentiment { display: block; margin-top: 5px; font-size: 10px; font-weight: 600; }
     .feedback-sentiment i { font-size: 7px; vertical-align: 1px; }
     [data-bs-theme="dark"] .weekly-feedback-link { color: var(--dm-text,#e2e8f0); }
+    .analytics-date-range { cursor: pointer; background-color: var(--app-surface, #fff) !important; }
+    .flatpickr-calendar {
+        overflow: hidden;
+        border: 1px solid var(--app-border,#dfe7e2);
+        border-radius: 9px;
+        background: var(--app-surface,#fff);
+        box-shadow: 0 12px 30px rgba(6,83,33,.14);
+        color: var(--app-text,#17211b);
+        font-family: var(--app-font-sans, Poppins, sans-serif);
+    }
+    .flatpickr-calendar .flatpickr-months,
+    .flatpickr-calendar .flatpickr-month,
+    .flatpickr-calendar .flatpickr-current-month,
+    .flatpickr-calendar .flatpickr-current-month .flatpickr-monthDropdown-months,
+    .flatpickr-calendar .flatpickr-current-month input.cur-year {
+        background: #0b6b2c !important;
+        color: #fff !important;
+        fill: #fff !important;
+    }
+    .flatpickr-calendar .flatpickr-months { padding: 2px 0; }
+    .flatpickr-calendar .flatpickr-current-month {
+        font-size: 0.9rem;
+        font-weight: 400;
+    }
+    .flatpickr-calendar .flatpickr-current-month .cur-month,
+    .flatpickr-calendar .flatpickr-current-month .flatpickr-monthDropdown-months,
+    .flatpickr-calendar .flatpickr-current-month input.cur-year {
+        font-weight: 400 !important;
+    }
+    .flatpickr-calendar .flatpickr-current-month .flatpickr-monthDropdown-months option {
+        background: var(--app-surface,#fff);
+        color: var(--app-text,#17211b);
+    }
+    .flatpickr-calendar .flatpickr-prev-month,
+    .flatpickr-calendar .flatpickr-next-month { color: #fff !important; fill: #fff !important; }
+    .flatpickr-calendar .flatpickr-prev-month svg,
+    .flatpickr-calendar .flatpickr-next-month svg { fill: #fff !important; }
+    .flatpickr-calendar .flatpickr-prev-month:hover svg,
+    .flatpickr-calendar .flatpickr-next-month:hover svg { fill: #c9ed86 !important; }
+    .flatpickr-calendar .flatpickr-weekdays,
+    .flatpickr-calendar span.flatpickr-weekday {
+        background: #f3f8f4;
+        color: #526158;
+        font-weight: 500;
+    }
+    .flatpickr-calendar .flatpickr-day { color: #344139; font-weight: 400; }
+    .flatpickr-calendar .flatpickr-day:hover,
+    .flatpickr-calendar .flatpickr-day:focus { border-color: #bbdca4; background: #eef7e8; }
+    .flatpickr-calendar .flatpickr-day.today { border-color: #0b6b2c; color: #0b6b2c; }
+    .flatpickr-calendar .flatpickr-day.today:hover { border-color: #0b6b2c; background: #eef7e8; color: #065321; }
+    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange,
+    .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover { background: #0b6b2c; border-color: #0b6b2c; color: #fff; }
+    .flatpickr-day.inRange { border-color: #dcfce7; background: #dcfce7; box-shadow: -5px 0 0 #dcfce7, 5px 0 0 #dcfce7; }
+    [data-bs-theme="dark"] .flatpickr-calendar { border-color: var(--app-border,#303b34); background: var(--app-surface,#171d19); color: var(--app-text,#edf4ef); box-shadow: 0 14px 36px rgba(0,0,0,.36); }
+    [data-bs-theme="dark"] .flatpickr-weekdays,
+    [data-bs-theme="dark"] span.flatpickr-weekday { background: var(--app-surface-muted,#1c241f); color: #b7c5bb; }
+    [data-bs-theme="dark"] .flatpickr-day { color: var(--app-text,#edf4ef); }
+    [data-bs-theme="dark"] .flatpickr-day.prevMonthDay,
+    [data-bs-theme="dark"] .flatpickr-day.nextMonthDay { color: var(--app-text-muted,#91a096); }
+    [data-bs-theme="dark"] .flatpickr-day:hover,
+    [data-bs-theme="dark"] .flatpickr-day:focus { border-color: #3e6d4d; background: #26362b; color: #fff; }
+    [data-bs-theme="dark"] .flatpickr-day.today { border-color: #94c83d; color: #c9ed86; }
+    [data-bs-theme="dark"] .flatpickr-day.inRange { border-color: #234a30; background: #234a30; box-shadow: -5px 0 0 #234a30, 5px 0 0 #234a30; color: #eaf5e3; }
+    [data-bs-theme="dark"] .flatpickr-day.selected,
+    [data-bs-theme="dark"] .flatpickr-day.startRange,
+    [data-bs-theme="dark"] .flatpickr-day.endRange { border-color: #5a9e45; background: #0b6b2c; color: #fff; }
+    [data-bs-theme="dark"] .flatpickr-current-month .flatpickr-monthDropdown-months option { background: #171d19; color: #edf4ef; }
 
     @media (max-width: 767.98px) {
         .chart-card .chart-card-header { align-items: flex-start; padding: 14px 14px 0; }
@@ -156,18 +272,8 @@
 {{-- ── Page Header ── --}}
 <div class="row">
     <div class="col-12">
-        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-            <div>
-                <h4 class="mb-sm-0">Analytics Dashboard</h4>
-            </div>
-            <div class="page-title-right d-flex flex-wrap align-items-center gap-2 mt-3 mt-sm-0">
-                <a href="{{ route('reports.feedback.index') }}" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-table me-1"></i>Feedback Table
-                </a>
-                <a href="{{ route('reports.analytics.export.excel', request()->query()) }}" class="btn btn-sm btn-success">
-                    <i class="bi bi-file-earmark-excel me-1"></i>Export Consolidated Excel
-                </a>
-            </div>
+        <div class="page-title-box">
+            <h4 class="mb-0">Analytics Dashboard</h4>
         </div>
     </div>
 </div>
@@ -176,10 +282,18 @@
 <div class="analytics-filter-bar mb-4">
     <form method="GET" action="{{ route('reports.analytics') }}" id="analyticsForm">
         <div class="row g-2 align-items-end">
-            <div class="col-6 col-md-3 col-xl">
-                <label class="form-label small fw-semibold mb-1">Date</label>
-                <input type="date" name="date" class="form-control form-control-sm"
-                       value="{{ $filters['date'] ?? '' }}">
+            <div class="col-12 col-md-6 col-xl-3">
+                <label for="analyticsDateRange" class="form-label small fw-semibold mb-1">Dates Filter</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-calendar-range" aria-hidden="true"></i></span>
+                    <input type="text" id="analyticsDateRange"
+                           class="form-control analytics-date-range"
+                           value="{{ !empty($filters['date_from']) ? $filters['date_from'] . (!empty($filters['date_to']) ? ' to ' . $filters['date_to'] : '') : '' }}"
+                           placeholder="Select start and end dates"
+                           autocomplete="off" readonly>
+                </div>
+                <input type="hidden" name="date_from" id="analyticsDateFrom" value="{{ $filters['date_from'] ?? '' }}">
+                <input type="hidden" name="date_to" id="analyticsDateTo" value="{{ $filters['date_to'] ?? '' }}">
             </div>
             <div class="col-6 col-md-3 col-xl">
                 <label class="form-label small fw-semibold mb-1">Month</label>
@@ -226,23 +340,124 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-12 col-xl-auto ms-xl-auto">
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-sm btn-primary px-3">
-                        <i class="bi bi-funnel me-1"></i>Apply
-                    </button>
-                    @if(array_filter($filters ?? []))
-                    <a href="{{ route('reports.analytics') }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
-                    @endif
-                    <a href="{{ route('reports.analytics.export.excel', request()->query()) }}" class="btn btn-sm btn-success">
-                        <i class="bi bi-file-earmark-excel me-1"></i>Export
-                    </a>
-                </div>
-            </div>
+        </div>
+        <div class="d-flex flex-wrap justify-content-end gap-2 mt-3">
+            <button type="submit" class="btn btn-sm btn-primary px-3">
+                <i class="bi bi-funnel me-1"></i>Apply
+            </button>
+            @if(array_filter($filters ?? []))
+            <a href="{{ route('reports.analytics') }}" class="btn btn-sm btn-outline-secondary" title="Clear filters" aria-label="Clear filters">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            @endif
+            <button type="button"
+                    class="btn btn-sm btn-outline-success"
+                    data-bs-toggle="modal"
+                    data-bs-target="#monthlyReportModal">
+                <i class="bi bi-calendar-month me-1"></i>Monthly Report
+            </button>
+            <button type="button"
+                    class="btn btn-sm btn-outline-success"
+                    data-bs-toggle="modal"
+                    data-bs-target="#quarterlyReportModal">
+                <i class="bi bi-calendar3-range me-1"></i>Quarterly Report
+            </button>
+            <button type="submit"
+                    class="btn btn-sm btn-success"
+                    formaction="{{ route('reports.analytics.export.excel') }}"
+                    formmethod="GET">
+                <i class="bi bi-file-earmark-excel me-1"></i>Export Consolidated Excel
+            </button>
         </div>
     </form>
+</div>
+
+@php
+    $monthlyReportYears = $availableYears->isNotEmpty() ? $availableYears : collect([now()->year]);
+    $monthlyDefaultMonth = (int) ($filters['month'] ?? now()->month);
+    $monthlyDefaultYear = (int) ($filters['year'] ?? $monthlyReportYears->first() ?? now()->year);
+    $quarterlyDefaultQuarter = (int) ceil($monthlyDefaultMonth / 3);
+@endphp
+
+<div class="modal fade monthly-report-modal" id="monthlyReportModal" tabindex="-1" aria-labelledby="monthlyReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <form method="GET" action="{{ route('reports.analytics.export.monthly') }}">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title fs-6" id="monthlyReportModalLabel">Export Monthly Report</h5>
+                        <p class="text-muted small mb-0 mt-1">Choose the submission month to include.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="monthlyReportMonth" class="form-label small fw-semibold">Month</label>
+                        <select name="month" id="monthlyReportMonth" class="form-select form-select-sm" required>
+                            @foreach([1=>'January',2=>'February',3=>'March',4=>'April',5=>'May',6=>'June',7=>'July',8=>'August',9=>'September',10=>'October',11=>'November',12=>'December'] as $n => $name)
+                                <option value="{{ $n }}" {{ $monthlyDefaultMonth === $n ? 'selected' : '' }}>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="monthlyReportYear" class="form-label small fw-semibold">Year</label>
+                        <select name="year" id="monthlyReportYear" class="form-select form-select-sm" required>
+                            @foreach($monthlyReportYears as $year)
+                                <option value="{{ $year }}" {{ $monthlyDefaultYear === (int) $year ? 'selected' : '' }}>{{ $year }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Export Monthly Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade monthly-report-modal" id="quarterlyReportModal" tabindex="-1" aria-labelledby="quarterlyReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <form method="GET" action="{{ route('reports.analytics.export.quarterly') }}">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title fs-6" id="quarterlyReportModalLabel">Export Quarterly Report</h5>
+                        <p class="text-muted small mb-0 mt-1">Choose the quarter and reporting year.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="quarterlyReportQuarter" class="form-label small fw-semibold">Quarter</label>
+                        <select name="quarter" id="quarterlyReportQuarter" class="form-select form-select-sm" required>
+                            <option value="1" {{ $quarterlyDefaultQuarter === 1 ? 'selected' : '' }}>Q1 — January to March</option>
+                            <option value="2" {{ $quarterlyDefaultQuarter === 2 ? 'selected' : '' }}>Q2 — April to June</option>
+                            <option value="3" {{ $quarterlyDefaultQuarter === 3 ? 'selected' : '' }}>Q3 — July to September</option>
+                            <option value="4" {{ $quarterlyDefaultQuarter === 4 ? 'selected' : '' }}>Q4 — October to December</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="quarterlyReportYear" class="form-label small fw-semibold">Year</label>
+                        <select name="year" id="quarterlyReportYear" class="form-select form-select-sm" required>
+                            @foreach($monthlyReportYears as $year)
+                                <option value="{{ $year }}" {{ $monthlyDefaultYear === (int) $year ? 'selected' : '' }}>{{ $year }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export Quarterly Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 {{-- ── KPI Strip ── --}}
@@ -380,7 +595,7 @@
                      role="tabpanel">
                     @if(!empty($themeGroup['themes']))
                     <div class="theme-table-wrap">
-                        <table class="theme-table">
+                        <x-admin.table class="theme-table">
                             <thead>
                                 <tr>
                                     <th class="theme-rank">#</th>
@@ -406,7 +621,7 @@
                                 </tr>
                                 @endforeach
                             </tbody>
-                        </table>
+                        </x-admin.table>
                     </div>
                     @else
                     <div class="theme-empty">
@@ -434,8 +649,7 @@
                 <span class="badge bg-info-subtle text-info" style="font-size:10px;">{{ count($weeklyRows) }} records</span>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive" style="max-height:420px;overflow-y:auto;">
-                    <table class="table table-hover align-middle mb-0 weekly-summary-table" id="weeklySummaryTable" style="font-size:12px;">
+                <x-admin.table class="table-hover weekly-summary-table" id="weeklySummaryTable" style="font-size:12px;" max-height="420px">
                         <thead class="sticky-top" style="background:var(--tb-card-bg,#fff);z-index:1;">
                             <tr>
                                 <th class="ps-3"><i class="bi bi-inboxes me-1" aria-hidden="true"></i>Collection Means</th>
@@ -474,7 +688,12 @@
                                     @endif
                                 </td>
                                 <td class="text-muted text-center text-nowrap">{{ $f->phone ?: '—' }}</td>
-                                <td><span class="badge bg-secondary-subtle text-secondary">{{ $f->getThemeLabel() }}</span></td>
+                                @php $themeLabel = $f->getThemeLabel(); @endphp
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary">
+                                        {{ $themeLabel === '—' ? 'None' : $themeLabel }}
+                                    </span>
+                                </td>
                                 <td class="pe-3">
                                     @php
                                         $ft = $f->getFeedbackTypeLabel();
@@ -496,8 +715,7 @@
                             </td></tr>
                             @endforelse
                         </tbody>
-                    </table>
-                </div>
+                </x-admin.table>
             </div>
         </div>
     </div>
@@ -516,6 +734,30 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const dateRangeInput = document.getElementById('analyticsDateRange');
+    const dateFromInput = document.getElementById('analyticsDateFrom');
+    const dateToInput = document.getElementById('analyticsDateTo');
+
+    if (dateRangeInput && dateFromInput && dateToInput && typeof window.flatpickr === 'function') {
+        const initialDates = [dateFromInput.value, dateToInput.value].filter(Boolean);
+
+        window.flatpickr(dateRangeInput, {
+            mode: 'range',
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'd M Y',
+            conjunction: ' to ',
+            defaultDate: initialDates,
+            showMonths: window.innerWidth >= 992 ? 2 : 1,
+            disableMobile: true,
+            allowInput: false,
+            onChange: function (selectedDates, dateString, instance) {
+                dateFromInput.value = selectedDates[0] ? instance.formatDate(selectedDates[0], 'Y-m-d') : '';
+                dateToInput.value = selectedDates[1] ? instance.formatDate(selectedDates[1], 'Y-m-d') : '';
+            },
+        });
+    }
+
     // Service and sentiment tabs remain usable even if the chart library fails to load.
     document.getElementById('themesServiceCard')?.addEventListener('click', function (event) {
         const categoryButton = event.target.closest('#catTabPill .tab-btn');

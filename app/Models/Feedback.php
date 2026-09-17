@@ -4,12 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Feedback extends Model
 {
     use HasFactory;
+
+    public const REVIEW_SLA_HOURS = 24;
 
     protected $table = 'feedback_submissions';
 
@@ -193,11 +196,12 @@ class Feedback extends Model
 
     const SOURCES = [
         'portal'     => 'Portal',
-        'manual'     => 'Manual / Paper Form',
+        'manual'     => 'Manual Entry',
         'calls'      => 'Calls',
         'walk_in'    => 'Walk In',
         'ward_visit' => 'Ward Visit',
-        'paper_form' => 'Paper Form',
+        'social_media' => 'Social Media',
+        'sms'        => 'SMS',
         'other'      => 'Other',
     ];
 
@@ -205,8 +209,14 @@ class Feedback extends Model
         'calls'       => 'Calls',
         'walk_in'     => 'Walk In',
         'ward_visit'  => 'Ward Visit',
-        'paper_form'  => 'Paper Form',
+        'social_media'=> 'Social Media',
+        'sms'         => 'SMS',
         'other'       => 'Other',
+    ];
+
+    /** Historical keys retained only so existing submissions remain readable. */
+    const LEGACY_SOURCE_LABELS = [
+        'paper_form' => 'Manual Entry',
     ];
 
     const STATUSES = [
@@ -215,6 +225,20 @@ class Feedback extends Model
         'responded' => 'Responded',
         'closed' => 'Closed',
     ];
+
+    public function scopeFreshNew(Builder $query): Builder
+    {
+        return $query
+            ->where('status', 'new')
+            ->where('created_at', '>', now()->subHours(24));
+    }
+
+    public function scopeAgedOpen(Builder $query): Builder
+    {
+        return $query
+            ->where('status', 'new')
+            ->where('created_at', '<=', now()->subHours(24));
+    }
 
     public function department(): BelongsTo
     {
@@ -266,6 +290,58 @@ class Feedback extends Model
             ->first();
     }
 
+    public function isReviewDelayed(): bool
+    {
+        if (!$this->created_at) {
+            return false;
+        }
+
+        $reviewedOrNow = $this->reviewed_at ?: now();
+
+        return $reviewedOrNow->greaterThan($this->created_at->copy()->addHours(self::REVIEW_SLA_HOURS));
+    }
+
+    public function getReviewDelayMinutes(): int
+    {
+        if (!$this->isReviewDelayed()) {
+            return 0;
+        }
+
+        $deadline = $this->created_at->copy()->addHours(self::REVIEW_SLA_HOURS);
+        $reviewedOrNow = $this->reviewed_at ?: now();
+
+        return (int) floor($deadline->diffInMinutes($reviewedOrNow));
+    }
+
+    public function getReviewDelayLabel(): string
+    {
+        $minutes = $this->getReviewDelayMinutes();
+
+        if ($minutes <= 0) {
+            return 'On time';
+        }
+
+        $days = intdiv($minutes, 1440);
+        $hours = intdiv($minutes % 1440, 60);
+
+        $duration = $days > 0
+            ? $days . 'd' . ($hours > 0 ? ' ' . $hours . 'h' : '')
+            : max(1, $hours) . 'h';
+
+        return ($this->reviewed_at ? 'Delayed ' : 'Overdue ') . $duration;
+    }
+
+    public function getReviewDelayOwnerLabel(): string
+    {
+        if (!$this->isReviewDelayed()) {
+            return '—';
+        }
+
+        return $this->assignedTo?->getFullName()
+            ?? $this->reviewedBy?->getFullName()
+            ?? 'Unassigned';
+    }
+
     public function getReportExcerptAttribute(): string
     {
         return (string) ($this->overall_experience ?: $this->message ?: '');
@@ -273,7 +349,14 @@ class Feedback extends Model
 
     public function getSourceLabel(): string
     {
-        return self::SOURCES[$this->source] ?? ucfirst((string) $this->source);
+        return self::getSourceLabelFor($this->source);
+    }
+
+    public static function getSourceLabelFor(?string $source): string
+    {
+        return self::SOURCES[$source]
+            ?? self::LEGACY_SOURCE_LABELS[$source]
+            ?? ucfirst(str_replace('_', ' ', (string) $source));
     }
 
     public function getSubmitterRoleLabel(): string
@@ -308,8 +391,8 @@ class Feedback extends Model
     public function getStatusBadgeClass(): string
     {
         return match($this->status) {
-            'new'          => 'bg-danger',
-            'under_review' => 'bg-warning text-dark',
+            'new'          => 'bg-success',
+            'under_review' => 'bg-info text-dark',
             'responded'    => 'bg-success',
             'closed'       => 'bg-secondary',
             default        => 'bg-secondary',
@@ -321,6 +404,43 @@ class Feedback extends Model
         $class = $this->getStatusBadgeClass();
         $label = $this->getStatusLabel();
         return "<span class=\"badge {$class}\">{$label}</span>";
+    }
+
+    /**
+     * Presentation-only workflow state used in interactive tables.
+     * Stored status values remain unchanged for filtering and reporting.
+     */
+    public function getTableStatusKey(): string
+    {
+        if ($this->status === 'new' && $this->created_at?->lte(now()->subHours(24))) {
+            return 'open';
+        }
+
+        if ($this->status === 'under_review') {
+            return 'reviewed';
+        }
+
+        return (string) $this->status;
+    }
+
+    public function getTableStatusLabel(): string
+    {
+        return match ($this->getTableStatusKey()) {
+            'new'       => 'New',
+            'open'      => 'Open',
+            'reviewed'  => 'Reviewed',
+            'responded' => 'Responded',
+            'closed'    => 'Closed',
+            default     => $this->getStatusLabel(),
+        };
+    }
+
+    public function getTableStatusBadge(): string
+    {
+        $key = $this->getTableStatusKey();
+        $label = e($this->getTableStatusLabel());
+
+        return "<span class=\"feedback-status-badge feedback-status-badge--{$key}\">{$label}</span>";
     }
 
     /**

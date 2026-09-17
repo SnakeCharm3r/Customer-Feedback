@@ -64,4 +64,34 @@ class UserManagementTest extends TestCase
             'approved_by' => $admin->id,
         ]);
     }
+
+    public function test_admin_can_render_the_component_based_user_profile_and_edit_views(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'is_active' => true,
+            'is_first_user' => true,
+        ]);
+
+        $user = User::factory()->create([
+            'fname' => 'Emmanuel',
+            'mname' => 'Mpoyola',
+            'lname' => 'Gondwe',
+            'role' => User::ROLE_COO,
+            'is_active' => true,
+            'is_first_user' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('users.show', $user))
+            ->assertOk()
+            ->assertSee('Account administration')
+            ->assertSee('Emmanuel Mpoyola Gondwe');
+
+        $this->actingAs($admin)
+            ->get(route('users.edit', $user))
+            ->assertOk()
+            ->assertSee('Profile settings')
+            ->assertSee('Account and access');
+    }
 }

@@ -71,6 +71,7 @@
    <script>
       document.addEventListener('DOMContentLoaded', function () {
          const sidebarMenu = document.querySelector('.app-menu.navbar-menu');
+         const sidebarToggle = document.getElementById('topnav-hamburger-icon');
 
          if (!sidebarMenu) {
             return;
@@ -81,6 +82,18 @@
             const isCollapsed = sidebarSize === 'sm' || sidebarSize === 'sm-hover';
 
             sidebarMenu.classList.toggle('sidebar-brand-collapsed', isCollapsed);
+
+            if (sidebarToggle) {
+               sidebarToggle.setAttribute('aria-expanded', String(!isCollapsed));
+               sidebarToggle.title = isCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar';
+
+               const icon = sidebarToggle.querySelector('i');
+               if (icon) {
+                  icon.className = isCollapsed
+                     ? 'bi bi-layout-sidebar'
+                     : 'bi bi-layout-sidebar-inset';
+               }
+            }
          };
 
          syncSidebarBrandState();

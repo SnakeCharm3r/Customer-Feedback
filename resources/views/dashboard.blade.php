@@ -3,6 +3,7 @@
 
 @php
     $statusNew = (int) $statusCounts->get('new', 0);
+    $statusOpen = (int) $statusCounts->get('open', 0);
     $statusUnderReview = (int) $statusCounts->get('under_review', 0);
     $statusResponded = (int) $statusCounts->get('responded', 0);
     $statusClosed = (int) $statusCounts->get('closed', 0);
@@ -383,10 +384,10 @@
             label="Awaiting review"
             :value="$statusNew"
             icon="bi-inbox"
-            tone="red"
+            tone="green"
             :href="route('feedback.admin.index', ['status' => 'new'])"
             :badge="$statusNew > 0 ? 'Needs attention' : 'Queue is clear'"
-            :meta="$statusUnderReview.' under review'"
+            :meta="$statusOpen.' open · '.$statusUnderReview.' under review'"
         />
         <x-dashboard.metric-card
             label="Resolution rate"
@@ -463,8 +464,9 @@
         <x-dashboard.panel title="Status Pipeline" icon="bi-kanban" :flush="true">
             @php
                 $pipeline = [
-                    ['label' => 'New', 'count' => $statusNew, 'color' => '#dc3545', 'status' => 'new'],
-                    ['label' => 'Under Review', 'count' => $statusUnderReview, 'color' => '#e6a400', 'status' => 'under_review'],
+                    ['label' => 'New', 'count' => $statusNew, 'color' => '#16a34a', 'status' => 'new'],
+                    ['label' => 'Open', 'count' => $statusOpen, 'color' => '#86c98f', 'status' => 'open'],
+                    ['label' => 'Under Review', 'count' => $statusUnderReview, 'color' => '#2563eb', 'status' => 'under_review'],
                     ['label' => 'Responded', 'count' => $statusResponded, 'color' => '#15803d', 'status' => 'responded'],
                     ['label' => 'Closed', 'count' => $statusClosed, 'color' => '#6c757d', 'status' => 'closed'],
                 ];
@@ -507,8 +509,7 @@
                 <a href="{{ route('feedback.admin.index') }}" class="btn btn-sm btn-outline-primary">View All <i class="bi bi-arrow-right ms-1"></i></a>
             @endif
         </x-slot:actions>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle dashboard-table">
+        <x-admin.table class="table-hover dashboard-table">
                 <thead>
                     <tr>
                         <th>Reference</th>
@@ -528,7 +529,7 @@
                             <td class="dashboard-table__patient"><strong>{{ $item->patient_name ?: 'Anonymous' }}</strong><small>{{ $item->created_at->format('d M Y') }}</small></td>
                             <td><span class="badge {{ ['complaint' => 'bg-danger', 'compliment' => 'bg-success', 'suggestion' => 'bg-info', 'enquiry' => 'bg-secondary'][$item->feedback_type] ?? 'bg-secondary' }}">{{ ucfirst($item->feedback_type) }}</span></td>
                             <td class="dashboard-col-optional">{{ \App\Models\Feedback::SERVICE_CATEGORIES[$item->service_category] ?? ucfirst(str_replace('_', ' ', $item->service_category ?? 'Not set')) }}</td>
-                            <td>{!! $item->getStatusBadge() !!}</td>
+                            <td>{!! $item->getTableStatusBadge() !!}</td>
                             <td class="dashboard-col-optional">{{ $item->assignedTo?->getFullName() ?? 'Unassigned' }}</td>
                             <td class="dashboard-col-optional text-muted">{{ $item->created_at->diffForHumans() }}</td>
                             @if($authUser->canManageComplaints())<td class="text-end"><a href="{{ route('feedback.admin.show', $item) }}" class="btn btn-sm btn-outline-primary" aria-label="View {{ $item->reference_number }}"><i class="bi bi-arrow-right"></i></a></td>@endif
@@ -537,8 +538,7 @@
                         <tr><td colspan="8"><div class="dashboard-empty"><i class="bi bi-inbox"></i><p>No feedback submissions yet.</p></div></td></tr>
                     @endforelse
                 </tbody>
-            </table>
-        </div>
+        </x-admin.table>
     </x-dashboard.panel>
 </div>
 

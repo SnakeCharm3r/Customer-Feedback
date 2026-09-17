@@ -677,9 +677,9 @@
 
         .app-footer-shell {
             min-height: 82px;
-            display: flex;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             align-items: center;
-            justify-content: space-between;
             gap: 1.5rem;
             padding: 1rem 0;
         }
@@ -688,6 +688,7 @@
             min-width: 0;
             display: flex;
             align-items: center;
+            justify-content: flex-start;
             gap: 0.75rem;
         }
 
@@ -738,7 +739,8 @@
             display: flex;
             align-items: flex-end;
             flex-direction: column;
-            gap: 0.35rem;
+            justify-self: end;
+            gap: 0.3rem;
             text-align: right;
         }
 
@@ -796,20 +798,29 @@
 
         @media (max-width: 767.98px) {
             .app-footer-shell {
-                align-items: flex-start;
-                flex-direction: column;
-                gap: 0.85rem;
+                grid-template-columns: minmax(0, 1fr);
+                align-items: center;
+                gap: 0.55rem;
                 padding: 1rem 0;
+            }
+
+            .app-footer-brand {
+                justify-content: center;
+            }
+
+            .app-footer-brand-copy {
+                text-align: left;
             }
 
             .app-footer-meta {
                 width: 100%;
-                align-items: flex-start;
-                text-align: left;
+                align-items: center;
+                justify-self: stretch;
+                text-align: center;
             }
 
             .app-footer-links {
-                justify-content: flex-start;
+                justify-content: center;
             }
         }
 
@@ -1258,6 +1269,11 @@
             background: #fecaca;
         }
 
+        .sidebar-nav-count-new {
+            color: #14532d;
+            background: #bbf7d0;
+        }
+
         .sidebar-nav-count-warning {
             color: #78350f;
             background: #fde68a;
@@ -1395,5 +1411,9 @@
 
     <!-- Tom Select CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
-    
+    <!-- Component-led admin shell overrides -->
+    <link href="{{ asset('assets/css/admin-shell.css') }}" rel="stylesheet" type="text/css">
+
+    @stack('styles')
+
 </head>

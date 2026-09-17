@@ -6,7 +6,6 @@
 @php
     $authUser    = auth()->user();
     $hasFilters  = request()->hasAny(['search','type','priority','assigned_to','date_from','date_to','status']);
-    $typeColors  = ['complaint'=>'danger','compliment'=>'success','suggestion'=>'info','enquiry'=>'secondary'];
     $typeIcons   = ['complaint'=>'bi-exclamation-octagon','compliment'=>'bi-hand-thumbs-up','suggestion'=>'bi-lightbulb','enquiry'=>'bi-question-circle'];
 @endphp
 
@@ -20,15 +19,10 @@
                     Manage, filter, and respond to all submitted feedback
                 </p>
             </div>
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <a href="{{ route('feedback.manual.create') }}" class="btn btn-success btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i>Add Manual Entry
-                </a>
-                <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Feedback</li>
-                </ol>
-            </div>
+            <ol class="breadcrumb m-0">
+                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Feedback</li>
+            </ol>
         </div>
     </div>
 </div>
@@ -38,8 +32,9 @@
     @php
         $statusCards = [
             ['label'=>'All',         'key'=>'',             'icon'=>'bi-collection',      'color'=>'primary',   'count'=>$counts['total']],
-            ['label'=>'New',         'key'=>'new',          'icon'=>'bi-inbox',            'color'=>'danger',    'count'=>$counts['new']],
-            ['label'=>'Under Review','key'=>'under_review', 'icon'=>'bi-hourglass-split',  'color'=>'warning',   'count'=>$counts['under_review']],
+            ['label'=>'New',         'key'=>'new',          'icon'=>'bi-inbox',            'color'=>'success',   'count'=>$counts['new']],
+            ['label'=>'Open',        'key'=>'open',         'icon'=>'bi-folder2-open',     'color'=>'primary',   'count'=>$counts['open']],
+            ['label'=>'Under Review','key'=>'under_review', 'icon'=>'bi-hourglass-split',  'color'=>'info',      'count'=>$counts['under_review']],
             ['label'=>'Responded',   'key'=>'responded',    'icon'=>'bi-check2-circle',    'color'=>'success',   'count'=>$counts['responded']],
             ['label'=>'Closed',      'key'=>'closed',       'icon'=>'bi-archive',          'color'=>'secondary', 'count'=>$counts['closed']],
         ];
@@ -152,6 +147,11 @@
                             <i class="bi bi-x-lg"></i>
                         </a>
                         @endif
+                        <a href="{{ route('feedback.manual.create') }}"
+                           class="btn btn-outline-success btn-sm px-2"
+                           title="Add feedback manually">
+                            <i class="bi bi-plus-lg me-1"></i>Manual Entry
+                        </a>
                     </div>
                 </div>
             </div>
@@ -187,8 +187,7 @@
     </div>
 
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" style="font-size:13px;">
+        <x-admin.table class="table-hover" style="font-size:13px;">
                 <thead style="background:#f8f9fa;">
                     <tr>
                         <th class="ps-3 py-3 fw-semibold text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;width:160px;">Reference</th>
@@ -204,7 +203,6 @@
                 <tbody>
                     @forelse($feedbacks as $fb)
                     @php
-                        $fbColor = $typeColors[$fb->feedback_type] ?? 'secondary';
                         $fbIcon  = $typeIcons[$fb->feedback_type]  ?? 'bi-chat';
                     @endphp
                     <tr class="{{ $fb->is_priority ? 'priority-row' : '' }}">
@@ -237,8 +235,7 @@
 
                         {{-- Type --}}
                         <td class="py-3">
-                            <span class="badge bg-{{ $fbColor }}-subtle text-{{ $fbColor }} d-inline-flex align-items-center gap-1"
-                                  style="font-size:11px;">
+                            <span class="feedback-type-badge feedback-type-badge--{{ $fb->feedback_type }}">
                                 <i class="bi {{ $fbIcon }}"></i>
                                 {{ ucfirst($fb->feedback_type) }}
                             </span>
@@ -258,7 +255,7 @@
                         </td>
 
                         {{-- Status --}}
-                        <td class="py-3">{!! $fb->getStatusBadge() !!}</td>
+                        <td class="py-3">{!! $fb->getTableStatusBadge() !!}</td>
 
                         {{-- Assigned --}}
                         <td class="py-3">
@@ -284,8 +281,11 @@
                         {{-- Action --}}
                         <td class="text-end pe-3 py-3">
                             <a href="{{ route('feedback.admin.show', $fb) }}"
-                               class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye me-1"></i>View
+                               class="btn btn-sm btn-outline-primary d-inline-flex align-items-center justify-content-center p-0"
+                               style="width:30px;height:30px;"
+                               title="View feedback"
+                               aria-label="View feedback {{ $fb->reference_number }}">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
                             </a>
                         </td>
                     </tr>
@@ -312,8 +312,7 @@
                     </tr>
                     @endforelse
                 </tbody>
-            </table>
-        </div>
+        </x-admin.table>
     </div>
 
     @if($feedbacks->hasPages())

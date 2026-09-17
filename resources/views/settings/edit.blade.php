@@ -401,8 +401,7 @@
                             <i class="bi bi-geo-alt fs-2 d-block mb-2"></i>No locations defined yet.
                         </div>
                     @else
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                    <x-admin.table class="table-hover">
                             <thead class="table-light">
                                 <tr>
                                     <th style="width:80px">Order</th>
@@ -526,8 +525,7 @@
                                 </tr>
                                 @endforeach
                             </tbody>
-                        </table>
-                    </div>
+                    </x-admin.table>
                     @endif
                 </div>
             </div>

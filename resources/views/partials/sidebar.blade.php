@@ -1,7 +1,7 @@
 @php
     $sidebarUser = auth()->user();
     $sidebarNewCount = $sidebarUser?->canManageComplaints()
-        ? \App\Models\Feedback::where('status', 'new')->count()
+        ? \App\Models\Feedback::freshNew()->count()
         : 0;
     $sidebarPendingUsers = $sidebarUser?->canManageUsers()
         ? \App\Models\User::where('is_active', false)->where('is_first_user', false)->count()
@@ -45,10 +45,6 @@
                 </span>
             </span>
         </a>
-        <button type="button" class="btn btn-sm p-0 header-item btn-vertical-sm-hover ccbrt-sidebar-collapse"
-            id="vertical-hover" aria-label="Toggle compact sidebar" title="Toggle compact sidebar">
-            <i class="bi bi-layout-sidebar-inset"></i>
-        </button>
     </div>
 
     <div id="scrollbar">
@@ -84,7 +80,7 @@
                                 <span class="sidebar-nav-icon"><i class="bi bi-inbox"></i></span>
                                 <span class="sidebar-nav-label">All Submissions</span>
                                 @if($sidebarNewCount > 0)
-                                    <span class="sidebar-nav-count sidebar-nav-count-danger">{{ $sidebarNewCount }}</span>
+                                    <span class="sidebar-nav-count sidebar-nav-count-new">{{ $sidebarNewCount }}</span>
                                 @endif
                             </a>
                         </li>

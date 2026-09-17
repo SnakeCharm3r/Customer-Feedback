@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\Feedback;
 use App\Models\User;
+use App\Services\QuarterlyFeedbackReport;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -55,9 +56,13 @@ class FeedbackReportController extends Controller
             ? $this->buildCollectionMeans($request)
             : [];
 
-        $summary  = $this->buildSummary();
+        $summary  = $this->buildSummary($canViewFeedbackReport ? $request : null);
+        $breakdowns = $canViewFeedbackReport ? $this->buildReportBreakdowns($request) : [];
+        $delaySummary = $canViewFeedbackReport ? $this->buildDelaySummary($request) : [];
         $reviewers = $this->reviewUsers();
         $assignableUsers = $this->assignableUsers();
+        $departments = Department::orderBy('name')->get();
+        $locations = Feedback::getLocations(false);
 
         $availableYears = Feedback::selectRaw('YEAR(created_at) as yr')
             ->groupBy('yr')->orderByDesc('yr')->pluck('yr');
@@ -67,14 +72,19 @@ class FeedbackReportController extends Controller
             'weekly'               => $weekly,
             'collectionMeans'      => $collectionMeans,
             'summary'              => $summary,
+            'breakdowns'           => $breakdowns,
+            'delaySummary'         => $delaySummary,
             'reviewers'            => $reviewers,
             'assignableUsers'      => $assignableUsers,
+            'departments'          => $departments,
+            'locations'            => $locations,
             'availableYears'       => $availableYears,
             'canViewFeedbackReport'=> $canViewFeedbackReport,
             'canViewWeeklyReport'  => $canViewWeeklyReport,
             'filters'              => $request->only([
                 'status', 'source', 'reviewed_by', 'assigned_to',
-                'search', 'month', 'year', 'feedback_type',
+                'search', 'month', 'year', 'feedback_type', 'date_from', 'date_to',
+                'department_id', 'location', 'wing', 'theme', 'delay',
             ]),
         ]);
     }
@@ -84,7 +94,11 @@ class FeedbackReportController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
         abort_unless($user?->canViewReports() || $user?->canViewWeeklyReport(), 403);
-        $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
+        $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d'],
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+        ]);
 
         $filters = $this->analyticsFilters($request);
 
@@ -101,11 +115,16 @@ class FeedbackReportController extends Controller
         ])->toArray();
 
         // ── 2. Collection Means (source) ──
-        $sourceRaw = $base()->selectRaw('source, COUNT(*) as cnt')->groupBy('source')->orderByDesc('cnt')->get();
+        $sourceGroup = $this->sourceGroupingExpression();
+        $sourceRaw = $base()
+            ->selectRaw($sourceGroup . ' as source, COUNT(*) as cnt')
+            ->groupByRaw($sourceGroup)
+            ->orderByDesc('cnt')
+            ->get();
         $sourceTotal = $sourceRaw->sum('cnt');
         $collectionMeans = $sourceRaw->map(fn($r) => [
             'key'   => $r->source,
-            'label' => Feedback::SOURCES[$r->source] ?? ucfirst((string)$r->source),
+            'label' => Feedback::getSourceLabelFor($r->source),
             'count' => $r->cnt,
             'pct'   => $sourceTotal > 0 ? round($r->cnt / $sourceTotal * 100, 1) : 0,
         ])->values()->toArray();
@@ -136,9 +155,12 @@ class FeedbackReportController extends Controller
         }
 
         // ── 4. Monthly trend (current year or filtered year) ──
+        $trendDate = !empty($filters['date_from'])
+            ? $filters['date_from']
+            : (!empty($filters['date']) ? $filters['date'] : ($filters['date_to'] ?? null));
         $trendYear = !empty($filters['year'])
             ? (int)$filters['year']
-            : (!empty($filters['date']) ? (int)substr($filters['date'], 0, 4) : now()->year);
+            : ($trendDate ? (int)substr($trendDate, 0, 4) : now()->year);
         $trendRaw = $this->applyAnalyticsFilters(
             Feedback::query()->whereYear('created_at', $trendYear),
             $filters
@@ -259,7 +281,14 @@ class FeedbackReportController extends Controller
     public function exportAnalyticsExcel(Request $request): \Symfony\Component\HttpFoundation\Response
     {
         abort_unless(Auth::user()?->canViewReports() || Auth::user()?->canViewWeeklyReport(), 403);
-        $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
+        $isMonthlyExport = $request->routeIs('reports.analytics.export.monthly');
+        $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d'],
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'month' => [$isMonthlyExport ? 'required' : 'nullable', 'integer', 'between:1,12'],
+            'year' => [$isMonthlyExport ? 'required' : 'nullable', 'integer', 'between:2000,2100'],
+        ]);
 
         $filters = $this->analyticsFilters($request);
         $base = function () use ($filters): Builder {
@@ -267,7 +296,9 @@ class FeedbackReportController extends Controller
         };
 
         $spreadsheet = new Spreadsheet();
-        $spreadsheet->getProperties()->setTitle('CCBRT Consolidated Analytics Report');
+        $spreadsheet->getProperties()->setTitle(
+            $isMonthlyExport ? 'CCBRT Monthly Consolidated Report' : 'CCBRT Consolidated Analytics Report'
+        );
 
         // ── Style constants ──
         $hdrFill   = ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '065321']];
@@ -282,9 +313,11 @@ class FeedbackReportController extends Controller
                        7=>'July',8=>'August',9=>'September',10=>'October',11=>'November',12=>'December'];
         $filterLabel = 'Generated: ' . now()->format('d M Y, H:i');
         if (!empty($filters['date']))  $filterLabel .= '  |  Date: ' . \Carbon\Carbon::parse($filters['date'])->format('d M Y');
+        if (!empty($filters['date_from'])) $filterLabel .= '  |  From: ' . \Carbon\Carbon::parse($filters['date_from'])->format('d M Y');
+        if (!empty($filters['date_to']))   $filterLabel .= '  |  To: ' . \Carbon\Carbon::parse($filters['date_to'])->format('d M Y');
         if (!empty($filters['month'])) $filterLabel .= '  |  Month: ' . ($monthNames[(int)$filters['month']] ?? $filters['month']);
         if (!empty($filters['year']))  $filterLabel .= '  |  Year: '  . $filters['year'];
-        if (!empty($filters['source'])) $filterLabel .= '  |  Source: ' . (Feedback::SOURCES[$filters['source']] ?? $filters['source']);
+        if (!empty($filters['source'])) $filterLabel .= '  |  Source: ' . Feedback::getSourceLabelFor($filters['source']);
         if (!empty($filters['location'])) {
             $locationLabels = Feedback::getLocations(false);
             $filterLabel .= '  |  Location: ' . ($locationLabels[$filters['location']] ?? ucfirst((string)$filters['location']));
@@ -494,9 +527,14 @@ class FeedbackReportController extends Controller
         $brandSheet($shCollection, 'Collection Means');
         $prepareChartSheet($shCollection);
         $row = 4;
-        $srcRaw  = $base()->selectRaw('source, COUNT(*) as cnt')->groupBy('source')->orderByDesc('cnt')->get();
+        $sourceGroup = $this->sourceGroupingExpression();
+        $srcRaw = $base()
+            ->selectRaw($sourceGroup . ' as source, COUNT(*) as cnt')
+            ->groupByRaw($sourceGroup)
+            ->orderByDesc('cnt')
+            ->get();
         $srcTot  = $srcRaw->sum('cnt');
-        $srcData = $srcRaw->map(fn($r) => ['label' => Feedback::SOURCES[$r->source] ?? ucfirst((string)$r->source), 'count' => $r->cnt, 'pct' => $srcTot > 0 ? round($r->cnt / $srcTot * 100, 1) : 0])->values()->toArray();
+        $srcData = $srcRaw->map(fn($r) => ['label' => Feedback::getSourceLabelFor($r->source), 'count' => $r->cnt, 'pct' => $srcTot > 0 ? round($r->cnt / $srcTot * 100, 1) : 0])->values()->toArray();
         $collectionBlock = $writeBlock($shCollection, $row, 'COLLECTION MEANS', $srcData);
         $sourcePalette = ['0B8A38', 'F59E0B', '198FB8', '7C5CC4', '64748B', 'DC3545', '94C83D', 'D97706'];
         $addPieChart($shCollection, 'COLLECTION MEANS', $collectionBlock, 'E4', 'P20', array_slice($sourcePalette, 0, count($srcData)));
@@ -561,9 +599,12 @@ class FeedbackReportController extends Controller
         // ════════════════════════════════════
         // SHEET 8: Monthly trend
         // ════════════════════════════════════
+        $trendDate = !empty($filters['date_from'])
+            ? $filters['date_from']
+            : (!empty($filters['date']) ? $filters['date'] : ($filters['date_to'] ?? null));
         $trendYear = !empty($filters['year'])
             ? (int)$filters['year']
-            : (!empty($filters['date']) ? (int)substr($filters['date'], 0, 4) : now()->year);
+            : ($trendDate ? (int)substr($trendDate, 0, 4) : now()->year);
         $trendRaw = $this->applyAnalyticsFilters(
             Feedback::query()->whereYear('created_at', $trendYear),
             $filters
@@ -600,12 +641,13 @@ class FeedbackReportController extends Controller
         $addLineChart($shTrend, 'MONTHLY FEEDBACK TREND — ' . $trendYear, 4, 5, 16, 'F4', 'P22');
 
         // ════════════════════════════════════
-        // SHEET 9: Weekly Summary (raw rows)
+        // SHEET 9: Submission rows for the selected reporting period
         // ════════════════════════════════════
-        $sh6 = $spreadsheet->createSheet()->setTitle('Weekly Summary');
+        $submissionSheetTitle = $isMonthlyExport ? 'Monthly Summary' : 'Weekly Summary';
+        $sh6 = $spreadsheet->createSheet()->setTitle($submissionSheetTitle);
         $weeklyHeaders = ['Collection Means','Date','Month','Location','Tel # of Person','Comment / Suggestion','Theme','Feedback Type','Sentiment','Wing','Unit','Satisfied?','Platform'];
         $lastWCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($weeklyHeaders));
-        $brandSheet($sh6, 'General Submission Sheet — Weekly Summary', count($weeklyHeaders));
+        $brandSheet($sh6, 'General Submission Sheet — ' . $submissionSheetTitle, count($weeklyHeaders));
         $sh6->fromArray($weeklyHeaders, null, 'A4');
         $sh6->getStyle('A4:' . $lastWCol . '4')->applyFromArray([
             'font'      => ['bold' => true, 'size' => 9, 'color' => ['rgb' => 'FFFFFF']],
@@ -620,7 +662,7 @@ class FeedbackReportController extends Controller
         }
 
         $weeklyFeedbacks = $this->applyAnalyticsFilters(
-            Feedback::query()->with(['department']),
+            Feedback::query()->with(['department', 'assignedTo', 'reviewedBy']),
             $filters
         )
             ->orderBy('created_at')->get();
@@ -655,8 +697,10 @@ class FeedbackReportController extends Controller
         $sh6->freezePane('A5');
         $sh6->setAutoFilter('A4:' . $lastWCol . '4');
 
+        $this->addFeedbackDetailsSheet($spreadsheet, $weeklyFeedbacks, $filterLabel);
+
         // ════════════════════════════════════
-        // SHEET 10: Mabinti Centre Analytics
+        // SHEET 11: Mabinti Centre Analytics
         // ════════════════════════════════════
         $sh7 = $spreadsheet->createSheet()->setTitle('Mabinti Centre');
         $mabintiHeaders = ['Date','Feedback Type','Product \ Service','Other Product','Service Rating','Satisfied?','Satisfaction Comment','Overall Experience'];
@@ -710,7 +754,9 @@ class FeedbackReportController extends Controller
 
         $spreadsheet->setActiveSheetIndex(0);
 
-        $filename = 'CCBRT-Analytics-Report-' . now()->format('Ymd-His') . '.xlsx';
+        $filename = $isMonthlyExport
+            ? 'CCBRT-Monthly-Report-' . ($monthNames[(int) $filters['month']] ?? $filters['month']) . '-' . $filters['year'] . '-' . now()->format('Ymd-His') . '.xlsx'
+            : 'CCBRT-Analytics-Report-' . now()->format('Ymd-His') . '.xlsx';
         $writer   = new Xlsx($spreadsheet);
         $writer->setIncludeCharts(true);
         ob_start();
@@ -721,6 +767,17 @@ class FeedbackReportController extends Controller
             'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    public function exportQuarterlyExcel(Request $request, QuarterlyFeedbackReport $quarterlyReport): \Symfony\Component\HttpFoundation\Response
+    {
+        abort_unless(Auth::user()?->canViewReports() || Auth::user()?->canViewWeeklyReport(), 403);
+        $validated = $request->validate([
+            'quarter' => ['required', 'integer', 'between:1,4'],
+            'year' => ['required', 'integer', 'between:2000,2100'],
+        ]);
+
+        return $quarterlyReport->download((int) $validated['quarter'], (int) $validated['year']);
     }
 
     public function exportCsv(Request $request): StreamedResponse
@@ -741,9 +798,21 @@ class FeedbackReportController extends Controller
     {
         abort_unless(Auth::user()?->canViewReports(), 403);
         $feedbacks = $this->buildQuery($request)->get();
-        $summary   = $this->buildSummary();
-        $filters   = $request->only(['month', 'year', 'feedback_type', 'status', 'source']);
-        $html = view('reports.pdf.feedback_report', compact('feedbacks', 'summary', 'filters'))->render();
+        $summary   = $this->buildSummary($request);
+        $filters   = $request->only([
+            'search', 'date_from', 'date_to', 'month', 'year', 'source',
+            'department_id', 'location', 'wing', 'theme', 'status',
+            'assigned_to', 'delay', 'feedback_type', 'reviewed_by',
+        ]);
+        $filterLabels = $this->buildPrintableFilterLabels($request);
+        $locationLabels = Feedback::getLocations(false);
+        $html = view('reports.pdf.feedback_report', compact(
+            'feedbacks',
+            'summary',
+            'filters',
+            'filterLabels',
+            'locationLabels'
+        ))->render();
         $filename  = 'CCBRT-Feedback-Report-' . now()->format('Ymd-His') . '.html';
         return response($html, 200, [
             'Content-Type'        => 'text/html; charset=UTF-8',
@@ -783,31 +852,158 @@ class FeedbackReportController extends Controller
      */
     private function analyticsFilters(Request $request): array
     {
-        return $request->only(['date', 'month', 'year', 'source', 'department_id', 'location']);
+        return $request->only(['date', 'date_from', 'date_to', 'month', 'year', 'source', 'department_id', 'location']);
     }
 
     private function applyAnalyticsFilters(Builder $query, array $filters): Builder
     {
         return $query
             ->when(!empty($filters['date']),          fn(Builder $q) => $q->whereDate('created_at', $filters['date']))
+            ->when(!empty($filters['date_from']),     fn(Builder $q) => $q->whereDate('created_at', '>=', $filters['date_from']))
+            ->when(!empty($filters['date_to']),       fn(Builder $q) => $q->whereDate('created_at', '<=', $filters['date_to']))
             ->when(!empty($filters['month']),         fn(Builder $q) => $q->whereMonth('created_at', (int)$filters['month']))
             ->when(!empty($filters['year']),          fn(Builder $q) => $q->whereYear('created_at', (int)$filters['year']))
-            ->when(!empty($filters['source']),        fn(Builder $q) => $q->where('source', $filters['source']))
+            ->when(!empty($filters['source']), function (Builder $q) use ($filters): void {
+                $filters['source'] === 'manual'
+                    ? $q->whereIn('source', ['manual', 'paper_form'])
+                    : $q->where('source', $filters['source']);
+            })
             ->when(!empty($filters['department_id']), fn(Builder $q) => $q->where('department_id', (int)$filters['department_id']))
             ->when(!empty($filters['location']),      fn(Builder $q) => $q->where('location', $filters['location']));
     }
 
     private function buildQuery(Request $request): Builder
     {
-        return Feedback::query()
+        $this->validateReportFilters($request);
+
+        return $this->applyReportFilters(Feedback::query(), $request)
             ->with(['assignedTo', 'reviewedBy', 'createdBy', 'patientResponses.sender', 'department'])
-            ->when($request->filled('status'), fn(Builder $q) => $q->where('status', $request->string('status')->toString()))
-            ->when($request->filled('source'), fn(Builder $q) => $q->where('source', $request->string('source')->toString()))
+            ->orderByDesc('created_at');
+    }
+
+    private function validateReportFilters(Request $request): void
+    {
+        $request->validate([
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'reviewed_by' => ['nullable', 'integer', 'exists:users,id'],
+            'assigned_to' => ['nullable'],
+            'month' => ['nullable', 'integer', 'between:1,12'],
+            'year' => ['nullable', 'integer', 'between:2000,2100'],
+        ]);
+    }
+
+    private function buildPrintableFilterLabels(Request $request): array
+    {
+        $labels = [];
+        $monthNames = [
+            1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+            5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+            9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
+        ];
+
+        if ($request->filled('search')) {
+            $labels['Search'] = $request->string('search')->toString();
+        }
+        if ($request->filled('date_from') || $request->filled('date_to')) {
+            $from = $request->filled('date_from')
+                ? \Carbon\Carbon::parse($request->string('date_from')->toString())->format('d M Y')
+                : 'Beginning';
+            $to = $request->filled('date_to')
+                ? \Carbon\Carbon::parse($request->string('date_to')->toString())->format('d M Y')
+                : 'Present';
+            $labels['Dates'] = $from . ' to ' . $to;
+        }
+        if ($request->filled('month')) {
+            $month = $request->integer('month');
+            $labels['Month'] = $monthNames[$month] ?? (string) $month;
+        }
+        if ($request->filled('year')) {
+            $labels['Year'] = (string) $request->integer('year');
+        }
+        if ($request->filled('source')) {
+            $source = $request->string('source')->toString();
+            $labels['Source'] = Feedback::getSourceLabelFor($source);
+        }
+        if ($request->filled('department_id')) {
+            $labels['Department'] = Department::find($request->integer('department_id'))?->name ?? 'Unknown';
+        }
+        if ($request->filled('location')) {
+            $location = $request->string('location')->toString();
+            $labels['Location'] = Feedback::getLocations(false)[$location] ?? ucfirst(str_replace('_', ' ', $location));
+        }
+        if ($request->filled('wing')) {
+            $wing = $request->string('wing')->toString();
+            $labels['Ward / Wing'] = Feedback::WINGS[$wing] ?? ucfirst(str_replace('_', ' ', $wing));
+        }
+        if ($request->filled('theme')) {
+            $theme = $request->string('theme')->toString();
+            $labels['Theme'] = Feedback::THEMES[$theme] ?? ucfirst(str_replace('_', ' ', $theme));
+        }
+        if ($request->filled('status')) {
+            $status = $request->string('status')->toString();
+            $labels['Status'] = $status === 'open'
+                ? 'Open'
+                : (Feedback::STATUSES[$status] ?? ucfirst(str_replace('_', ' ', $status)));
+        }
+        if ($request->filled('assigned_to')) {
+            $assigned = $request->string('assigned_to')->toString();
+            $labels['Responsible'] = $assigned === 'unassigned'
+                ? 'Unassigned'
+                : (User::find((int) $assigned)?->getFullName() ?? 'Unknown');
+        }
+        if ($request->filled('delay')) {
+            $labels['Review Timing'] = $request->string('delay')->toString() === 'delayed'
+                ? 'Delayed / Overdue'
+                : 'On Time';
+        }
+        if ($request->filled('feedback_type')) {
+            $type = $request->string('feedback_type')->toString();
+            $labels['Type'] = Feedback::FEEDBACK_TYPES[$type] ?? ucfirst($type);
+        }
+        if ($request->filled('reviewed_by')) {
+            $labels['Reviewer'] = User::find($request->integer('reviewed_by'))?->getFullName() ?? 'Unknown';
+        }
+
+        return $labels;
+    }
+
+    private function applyReportFilters(Builder $query, Request $request): Builder
+    {
+        return $query
+            ->when($request->filled('status'), function (Builder $q) use ($request): void {
+                $status = $request->string('status')->toString();
+
+                match ($status) {
+                    'new'  => $q->freshNew(),
+                    'open' => $q->agedOpen(),
+                    default => $q->where('status', $status),
+                };
+            })
+            ->when($request->filled('source'), function (Builder $q) use ($request): void {
+                $source = $request->string('source')->toString();
+                $source === 'manual'
+                    ? $q->whereIn('source', ['manual', 'paper_form'])
+                    : $q->where('source', $source);
+            })
             ->when($request->filled('reviewed_by'), fn(Builder $q) => $q->where('reviewed_by', $request->integer('reviewed_by')))
-            ->when($request->filled('assigned_to'), fn(Builder $q) => $q->where('assigned_to', $request->integer('assigned_to')))
+            ->when($request->filled('assigned_to'), function (Builder $q) use ($request): void {
+                $assigned = $request->string('assigned_to')->toString();
+                $assigned === 'unassigned'
+                    ? $q->whereNull('assigned_to')
+                    : $q->where('assigned_to', (int) $assigned);
+            })
             ->when($request->filled('feedback_type'), fn(Builder $q) => $q->where('feedback_type', $request->string('feedback_type')->toString()))
             ->when($request->filled('month'), fn(Builder $q) => $q->whereMonth('created_at', $request->integer('month')))
             ->when($request->filled('year'), fn(Builder $q) => $q->whereYear('created_at', $request->integer('year')))
+            ->when($request->filled('date_from'), fn(Builder $q) => $q->whereDate('created_at', '>=', $request->string('date_from')->toString()))
+            ->when($request->filled('date_to'), fn(Builder $q) => $q->whereDate('created_at', '<=', $request->string('date_to')->toString()))
+            ->when($request->filled('department_id'), fn(Builder $q) => $q->where('department_id', $request->integer('department_id')))
+            ->when($request->filled('location'), fn(Builder $q) => $q->where('location', $request->string('location')->toString()))
+            ->when($request->filled('wing'), fn(Builder $q) => $q->where('wing', $request->string('wing')->toString()))
+            ->when($request->filled('theme'), fn(Builder $q) => $q->where('theme', $request->string('theme')->toString()))
+            ->when($request->filled('delay'), fn(Builder $q) => $this->applyReviewDelayFilter($q, $request->string('delay')->toString()))
             ->when($request->filled('search'), function (Builder $q) use ($request): void {
                 $s = trim($request->string('search')->toString());
                 $q->where(fn(Builder $sq) => $sq
@@ -815,17 +1011,89 @@ class FeedbackReportController extends Controller
                     ->orWhere('patient_name', 'like', "%{$s}%")
                     ->orWhere('overall_experience', 'like', "%{$s}%")
                     ->orWhere('message', 'like', "%{$s}%"));
-            })
-            ->orderByDesc('created_at');
+            });
+    }
+
+    private function applyReviewDelayFilter(Builder $query, string $delay): Builder
+    {
+        $cutoff = now()->subHours(Feedback::REVIEW_SLA_HOURS);
+        $reviewDeadlineSql = 'DATE_ADD(created_at, INTERVAL ' . Feedback::REVIEW_SLA_HOURS . ' HOUR)';
+
+        return match ($delay) {
+            'delayed' => $query->where(function (Builder $q) use ($cutoff, $reviewDeadlineSql): void {
+                $q->where(fn(Builder $pending) => $pending
+                    ->whereNull('reviewed_at')
+                    ->where('created_at', '<=', $cutoff))
+                    ->orWhere(fn(Builder $reviewed) => $reviewed
+                        ->whereNotNull('reviewed_at')
+                        ->whereRaw('reviewed_at > ' . $reviewDeadlineSql));
+            }),
+            'on_time' => $query->where(function (Builder $q) use ($cutoff, $reviewDeadlineSql): void {
+                $q->where(fn(Builder $pending) => $pending
+                    ->whereNull('reviewed_at')
+                    ->where('created_at', '>', $cutoff))
+                    ->orWhere(fn(Builder $reviewed) => $reviewed
+                        ->whereNotNull('reviewed_at')
+                        ->whereRaw('reviewed_at <= ' . $reviewDeadlineSql));
+            }),
+            default => $query,
+        };
+    }
+
+    private function buildReportBreakdowns(Request $request): array
+    {
+        $grouped = function (string $column) use ($request) {
+            return $this->applyReportFilters(Feedback::query(), $request)
+                ->selectRaw($column . ' as item_key, COUNT(*) as aggregate')
+                ->groupBy($column)
+                ->orderByDesc('aggregate')
+                ->get();
+        };
+
+        return [
+            'wards' => $grouped('wing')->map(fn($row) => [
+                'label' => Feedback::WINGS[$row->item_key] ?? ($row->item_key ? ucfirst(str_replace('_', ' ', $row->item_key)) : 'Not specified'),
+                'count' => (int) $row->aggregate,
+            ]),
+            'themes' => $grouped('theme')->map(fn($row) => [
+                'label' => Feedback::THEMES[$row->item_key] ?? ($row->item_key ? ucfirst(str_replace('_', ' ', $row->item_key)) : 'None'),
+                'count' => (int) $row->aggregate,
+            ]),
+            'locations' => $grouped('location')->map(function ($row) {
+                $labels = Feedback::getLocations(false);
+
+                return [
+                    'label' => $labels[$row->item_key] ?? ($row->item_key ? ucfirst(str_replace('_', ' ', $row->item_key)) : 'Not specified'),
+                    'count' => (int) $row->aggregate,
+                ];
+            }),
+        ];
+    }
+
+    private function buildDelaySummary(Request $request): array
+    {
+        $baseRequest = $request->duplicate();
+        $baseRequest->query->remove('delay');
+
+        $delayed = $this->applyReviewDelayFilter(
+            $this->applyReportFilters(Feedback::query(), $baseRequest),
+            'delayed'
+        );
+
+        return [
+            'total' => (clone $delayed)->count(),
+            'unassigned' => (clone $delayed)->whereNull('assigned_to')->count(),
+        ];
     }
 
     private function buildCollectionMeans(Request $request): array
     {
+        $sourceGroup = $this->sourceGroupingExpression();
         $rows = Feedback::query()
             ->when($request->filled('month'), fn(Builder $q) => $q->whereMonth('created_at', $request->integer('month')))
             ->when($request->filled('year'),  fn(Builder $q) => $q->whereYear('created_at',  $request->integer('year')))
-            ->selectRaw('source, COUNT(*) as cnt')
-            ->groupBy('source')
+            ->selectRaw($sourceGroup . ' as source, COUNT(*) as cnt')
+            ->groupByRaw($sourceGroup)
             ->orderByDesc('cnt')
             ->get();
 
@@ -834,7 +1102,7 @@ class FeedbackReportController extends Controller
         foreach ($rows as $row) {
             $result[] = [
                 'source' => $row->source,
-                'label'  => Feedback::SOURCES[$row->source] ?? ucfirst((string) $row->source),
+                'label'  => Feedback::getSourceLabelFor($row->source),
                 'count'  => $row->cnt,
                 'pct'    => $total > 0 ? round(($row->cnt / $total) * 100, 1) : 0,
             ];
@@ -842,26 +1110,42 @@ class FeedbackReportController extends Controller
         return ['rows' => $result, 'total' => $total];
     }
 
+    private function sourceGroupingExpression(): string
+    {
+        return "CASE WHEN source = 'paper_form' THEN 'manual' ELSE source END";
+    }
+
     private function buildWeeklyQuery(Request $request): Builder
     {
         return Feedback::query()
-            ->with(['department'])
-            ->when($request->filled('source'), fn(Builder $q) => $q->where('source', $request->string('source')->toString()))
+            ->with(['department', 'assignedTo', 'reviewedBy'])
+            ->when($request->filled('source'), function (Builder $q) use ($request): void {
+                $source = $request->string('source')->toString();
+                $source === 'manual'
+                    ? $q->whereIn('source', ['manual', 'paper_form'])
+                    : $q->where('source', $source);
+            })
             ->when($request->filled('feedback_type'), fn(Builder $q) => $q->where('feedback_type', $request->string('feedback_type')->toString()))
             ->when($request->filled('month'), fn(Builder $q) => $q->whereMonth('created_at', $request->integer('month')))
             ->when($request->filled('year'), fn(Builder $q) => $q->whereYear('created_at', $request->integer('year')))
             ->orderBy('created_at');
     }
 
-    private function buildSummary(): array
+    private function buildSummary(?Request $request = null): array
     {
+        $base = function () use ($request): Builder {
+            $query = Feedback::query();
+
+            return $request ? $this->applyReportFilters($query, $request) : $query;
+        };
+
         return [
-            'total'          => Feedback::count(),
-            'portal'         => Feedback::where('source', 'portal')->count(),
-            'manual'         => Feedback::where('source', 'manual')->count(),
-            'other'          => Feedback::where('source', 'other')->count(),
-            'reviewed'       => Feedback::whereNotNull('reviewed_at')->count(),
-            'pending_review' => Feedback::whereNull('reviewed_at')->count(),
+            'total'          => $base()->count(),
+            'portal'         => $base()->where('source', 'portal')->count(),
+            'manual'         => $base()->whereIn('source', ['manual', 'paper_form'])->count(),
+            'other'          => $base()->whereNotIn('source', ['portal', 'manual', 'paper_form'])->count(),
+            'reviewed'       => $base()->whereNotNull('reviewed_at')->count(),
+            'pending_review' => $base()->whereNull('reviewed_at')->count(),
         ];
     }
 
@@ -870,8 +1154,9 @@ class FeedbackReportController extends Controller
         $filename = 'feedback-report-' . now()->format('Ymd-His') . '.csv';
         return response()->streamDownload(function () use ($feedbacks): void {
             $h = fopen('php://output', 'w');
+            $locationLabels = Feedback::getLocations(false);
             fprintf($h, chr(0xEF) . chr(0xBB) . chr(0xBF));
-            fputcsv($h, ['Ref #','Source','Feedback Type','Service Category','Report Excerpt','Theme','Sentiment','Wing','Department','Reviewer','Date Reviewed','Assigned To','Submitted At']);
+            fputcsv($h, ['Ref #','Source','Feedback Type','Service Category','Report Excerpt','Theme','Sentiment','Wing','Location','Department','Reviewer','Date Reviewed','Assigned To','Review Timing','Delay Owner','Submitted At']);
             foreach ($feedbacks as $f) {
                 fputcsv($h, [
                     $f->reference_no,
@@ -882,10 +1167,13 @@ class FeedbackReportController extends Controller
                     $f->getThemeLabel(),
                     $f->getSentimentLabel(),
                     $f->getWingLabel(),
+                    $locationLabels[$f->location] ?? ($f->location ? ucfirst(str_replace('_', ' ', $f->location)) : 'Not specified'),
                     $f->department?->name ?? '—',
                     $f->reviewedBy?->getFullName() ?? '',
                     $f->reviewed_at?->format('Y-m-d H:i') ?? '',
                     $f->assignedTo?->getFullName() ?? '',
+                    $f->getReviewDelayLabel(),
+                    $f->getReviewDelayOwnerLabel(),
                     $f->created_at?->format('Y-m-d H:i') ?? '',
                 ]);
             }
@@ -899,11 +1187,15 @@ class FeedbackReportController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Feedback Report');
 
+        $headers = ['Ref #','Source','Feedback Type','Service Category','Report Excerpt','Theme','Sentiment','Wing','Location','Department','Reviewer','Reviewer Role','Date Reviewed','Assigned To','Review Timing','Delay Owner','Submitted At'];
+        $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers));
+        $locationLabels = Feedback::getLocations(false);
+
         // ── Meta rows ──
         $sheet->setCellValue('A1', 'CCBRT Feedback Report');
         $sheet->setCellValue('A2', 'Generated: ' . now()->format('d M Y, H:i') . '   |   Total Records: ' . count($feedbacks));
-        $sheet->mergeCells('A1:M1');
-        $sheet->mergeCells('A2:M2');
+        $sheet->mergeCells('A1:' . $lastCol . '1');
+        $sheet->mergeCells('A2:' . $lastCol . '2');
         $sheet->getStyle('A1')->applyFromArray([
             'font'      => ['bold' => true, 'size' => 14, 'color' => ['rgb' => 'FFFFFF']],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '065321']],
@@ -918,7 +1210,6 @@ class FeedbackReportController extends Controller
         $sheet->getRowDimension(2)->setRowHeight(16);
 
         // ── Header row ──
-        $headers = ['Ref #','Source','Feedback Type','Service Category','Report Excerpt','Theme','Sentiment','Wing','Department','Reviewer','Reviewer Role','Date Reviewed','Assigned To','Submitted At'];
         $sheet->fromArray($headers, null, 'A4');
         $headerStyle = [
             'font'      => ['bold' => true, 'size' => 9, 'color' => ['rgb' => 'FFFFFF']],
@@ -926,7 +1217,6 @@ class FeedbackReportController extends Controller
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
             'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '065321']]],
         ];
-        $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers));
         $sheet->getStyle('A4:' . $lastCol . '4')->applyFromArray($headerStyle);
         $sheet->getRowDimension(4)->setRowHeight(20);
 
@@ -942,11 +1232,14 @@ class FeedbackReportController extends Controller
                 $f->getThemeLabel(),
                 $f->getSentimentLabel(),
                 $f->getWingLabel(),
+                $locationLabels[$f->location] ?? ($f->location ? ucfirst(str_replace('_', ' ', $f->location)) : 'Not specified'),
                 $f->department?->name ?? '',
                 $f->reviewedBy?->getFullName() ?? '',
                 $f->reviewedBy?->getRoleLabel() ?? '',
                 $f->reviewed_at?->format('d M Y H:i') ?? '',
                 $f->assignedTo?->getFullName() ?? '',
+                $f->getReviewDelayLabel(),
+                $f->getReviewDelayOwnerLabel(),
                 $f->created_at?->format('d M Y H:i') ?? '',
             ], null, 'A' . $row);
 
@@ -983,7 +1276,7 @@ class FeedbackReportController extends Controller
         }
 
         // ── Column widths ──
-        $colWidths = [18, 12, 14, 20, 50, 16, 12, 10, 18, 22, 20, 18, 22, 18];
+        $colWidths = [18, 12, 14, 20, 50, 16, 12, 12, 22, 18, 22, 20, 18, 22, 18, 22, 18];
         foreach ($colWidths as $i => $width) {
             $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1);
             $sheet->getColumnDimension($col)->setWidth($width);
@@ -1108,6 +1401,12 @@ class FeedbackReportController extends Controller
         $sheet->freezePane('A5');
         $sheet->setAutoFilter('A4:' . $lastCol . '4');
 
+        $this->addFeedbackDetailsSheet(
+            $spreadsheet,
+            $feedbacks,
+            'Generated: ' . now()->format('d M Y, H:i') . '   |   Weekly positive and negative feedback evidence'
+        );
+
         $filename = 'CCBRT-Weekly-Report-' . now()->format('Ymd-His') . '.xlsx';
         $writer = new Xlsx($spreadsheet);
         ob_start();
@@ -1118,6 +1417,96 @@ class FeedbackReportController extends Controller
             'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    private function addFeedbackDetailsSheet(Spreadsheet $spreadsheet, $feedbacks, string $filterLabel): void
+    {
+        $details = collect($feedbacks)
+            ->filter(fn(Feedback $feedback) => in_array($feedback->sentiment, ['positive', 'negative'], true))
+            ->sortBy([
+                fn(Feedback $a, Feedback $b) => strcmp((string) $a->sentiment, (string) $b->sentiment),
+                fn(Feedback $a, Feedback $b) => ($a->created_at?->timestamp ?? 0) <=> ($b->created_at?->timestamp ?? 0),
+            ])
+            ->values();
+        $positiveCount = $details->where('sentiment', 'positive')->count();
+        $negativeCount = $details->where('sentiment', 'negative')->count();
+        $locations = Feedback::getLocations(false);
+
+        $sheet = $spreadsheet->createSheet()->setTitle('Feedback Details');
+        $headers = [
+            'Sentiment', 'Reference', 'Submitted At', 'Collection Means', 'Location',
+            'Department / Unit', 'Theme', 'Feedback Type', 'Customer', 'Feedback Details',
+            'Status', 'Assigned Officer', 'Reviewer', 'Reviewed At',
+        ];
+        $lastColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers));
+
+        $sheet->setCellValue('A1', 'POSITIVE AND NEGATIVE FEEDBACK DETAILS');
+        $sheet->mergeCells('A1:' . $lastColumn . '1');
+        $sheet->setCellValue('A2', $filterLabel . "   |   Positive: {$positiveCount}   |   Negative: {$negativeCount}");
+        $sheet->mergeCells('A2:' . $lastColumn . '2');
+        $sheet->getStyle('A1:' . $lastColumn . '1')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '065321']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'indent' => 1],
+        ]);
+        $sheet->getStyle('A2:' . $lastColumn . '2')->applyFromArray([
+            'font' => ['size' => 9, 'color' => ['rgb' => '3D6B4F']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'EEF7E8']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'indent' => 1],
+        ]);
+        $sheet->fromArray($headers, null, 'A4');
+        $sheet->getStyle('A4:' . $lastColumn . '4')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 9, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '0B6B2C']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '065321']]],
+        ]);
+
+        $row = 5;
+        foreach ($details as $feedback) {
+            $sheet->fromArray([
+                $feedback->getSentimentLabel(),
+                $feedback->reference_no,
+                $feedback->created_at?->format('d M Y H:i') ?? '',
+                $feedback->getSourceLabel(),
+                $locations[$feedback->location] ?? ($feedback->location ? ucfirst(str_replace('_', ' ', $feedback->location)) : 'Not specified'),
+                $feedback->department?->name ?? (is_array($feedback->service_units) ? implode(', ', $feedback->service_units) : ($feedback->service_units ?? 'Not specified')),
+                $feedback->getThemeLabel(),
+                $feedback->getFeedbackTypeLabel(),
+                $feedback->patient_name ?: 'Anonymous / Not Provided',
+                $feedback->report_excerpt ?: 'No feedback text recorded.',
+                $feedback->getTableStatusLabel(),
+                $feedback->assignedTo?->getFullName() ?? 'Unassigned',
+                $feedback->reviewedBy?->getFullName() ?? 'Not reviewed',
+                $feedback->reviewed_at?->format('d M Y H:i') ?? '',
+            ], null, 'A' . $row);
+
+            $sentimentFill = $feedback->sentiment === 'positive' ? 'D1FAE5' : 'FEE2E2';
+            $sentimentText = $feedback->sentiment === 'positive' ? '065F46' : '991B1B';
+            $sheet->getStyle('A' . $row)->applyFromArray([
+                'font' => ['bold' => true, 'color' => ['rgb' => $sentimentText]],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $sentimentFill]],
+            ]);
+            $sheet->getStyle('A' . $row . ':' . $lastColumn . $row)->getBorders()->getBottom()
+                ->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E2E8F0');
+            $sheet->getStyle('F' . $row . ':J' . $row)->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+            $sheet->getRowDimension($row)->setRowHeight(32);
+            $row++;
+        }
+
+        if ($details->isEmpty()) {
+            $sheet->mergeCells('A5:' . $lastColumn . '6');
+            $sheet->setCellValue('A5', 'No positive or negative feedback matched this report period.');
+            $sheet->getStyle('A5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+        }
+
+        foreach ([12,18,20,18,22,24,22,16,24,55,15,24,24,20] as $index => $width) {
+            $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+            $sheet->getColumnDimension($column)->setWidth($width);
+        }
+        $sheet->freezePane('A5');
+        $sheet->setAutoFilter('A4:' . $lastColumn . '4');
+        $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE)->setFitToWidth(1)->setFitToHeight(0);
     }
 
     private function reviewUsers()

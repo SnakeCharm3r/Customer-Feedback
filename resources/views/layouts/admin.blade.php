@@ -8,16 +8,16 @@
       data-preloader="disable">
 @include('includes.head')
 
-<body>
-<div id="layout-wrapper">
+<body class="admin-shell-body">
+<div id="layout-wrapper" class="admin-shell">
 
     @include('partials.header')
     @include('partials.sidebar')
     <div class="vertical-overlay"></div>
 
-    <div class="main-content">
-        <div class="page-content">
-            <div class="container-fluid">
+    <div class="main-content app-main-content">
+        <main class="page-content app-page-content">
+            <div class="container-fluid app-page-container">
 
                 {{-- Page title / breadcrumb --}}
                 @hasSection('title')
@@ -45,7 +45,7 @@
                 @yield('content')
 
             </div>
-        </div>
+        </main>
         @include('partials.footer')
     </div>
 

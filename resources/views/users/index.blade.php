@@ -382,8 +382,7 @@
         </span>
     </div>
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table users-table table-hover align-middle mb-0" style="font-size:13px;">
+        <x-admin.table class="users-table table-hover" style="font-size:13px;">
                 <thead>
                     <tr>
                         <th class="ps-3 py-3">User</th>
@@ -490,8 +489,7 @@
                     </tr>
                     @endforelse
                 </tbody>
-            </table>
-        </div>
+        </x-admin.table>
     </div>
     @if($users->hasPages())
     <div class="card-footer d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">

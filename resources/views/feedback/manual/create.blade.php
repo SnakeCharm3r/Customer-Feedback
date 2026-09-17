@@ -232,11 +232,11 @@
                 <p class="small mb-2">Use this form to record feedback from:</p>
                 <ul class="small mb-3 ps-3">
                     <li>Verbal feedback from patients</li>
-                    <li>Paper form submissions</li>
                     <li>Phone feedback</li>
+                    <li>SMS and social media feedback</li>
                     <li>In-person interviews</li>
                 </ul>
-                <p class="small mb-0 text-muted">This feedback will be marked as "Manual / Paper Form" in the system and attributed to you as the entry person.</p>
+                <p class="small mb-0 text-muted">The selected collection means will be recorded as the feedback source and attributed to you as the entry person.</p>
             </div>
         </div>
     </div>

@@ -32,6 +32,8 @@ class DashboardController extends Controller
             ->pluck('aggregate', 'feedback_type');
 
         $totalFeedback = $statusCounts->sum();
+        $statusCounts->put('new', Feedback::freshNew()->count());
+        $statusCounts->put('open', Feedback::agedOpen()->count());
         $resolvedCount = (int) $statusCounts->get('responded', 0) + (int) $statusCounts->get('closed', 0);
         $responseRate = $totalFeedback > 0 ? (int) round(($resolvedCount / $totalFeedback) * 100) : 0;
 

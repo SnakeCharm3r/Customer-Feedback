@@ -14,7 +14,20 @@
     <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet">
 
     <style>
-        body { font-family: 'Poppins', sans-serif; }
+        :root { --bs-body-font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        body,
+        button,
+        input,
+        select,
+        textarea,
+        .btn,
+        .form-control,
+        .form-select,
+        .input-group-text,
+        .card,
+        .alert {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
         .auth-page-wrapper {
             min-height: 100vh;
             display: flex;

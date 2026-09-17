@@ -12,7 +12,8 @@
             </div>
 
             <div class="app-footer-meta">
-                <div class="app-footer-links">
+                @if($systemSettings?->privacyPolicyUrl() || $systemSettings?->termsOfUseUrl())
+                    <div class="app-footer-links">
                     @if($systemSettings?->privacyPolicyUrl())
                         <a href="{{ $systemSettings->privacyPolicyUrl() }}" target="_blank" rel="noopener noreferrer">
                             Privacy
@@ -24,7 +25,8 @@
                             Terms of use
                         </a>
                     @endif
-                </div>
+                    </div>
+                @endif
 
                 <p class="app-footer-copyright">
                     &copy; {{ now()->year }} {{ $systemSettings?->organization_name ?? 'CCBRT Hospital' }}.

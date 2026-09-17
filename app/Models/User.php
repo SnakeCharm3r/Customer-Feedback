@@ -116,6 +116,11 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
     /**
      * Role Check Methods
      */

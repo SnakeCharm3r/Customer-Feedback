@@ -95,6 +95,8 @@ class UserManagementController extends Controller
     {
         $this->authorize('view', $user);
 
+        $user->load(['approvedBy', 'department']);
+
         return view('users.show', compact('user'));
     }
 
